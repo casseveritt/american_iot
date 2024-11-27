@@ -83,7 +83,7 @@ void setup() {
 
   FastLED.addLeds<WS2812, LED0_PIN, GRB>(strip, NUM_LEDS_PER_STRIP);
   FastLED.addLeds<WS2812, LED1_PIN, GRB>(strip + NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.setBrightness(8);
+  FastLED.setBrightness(64);
   for (int i = 0; i < NUM_LEDS; i++) {
     strip[i] = CRGB::Black;
   }
@@ -96,11 +96,11 @@ void setup() {
     float r_top = 0.04f; // meters
     float r_bot = 0.31f;
     float height = 1.47f;
-    float slope = -1.47f / (r_bot - r_top);
+    //float slope = -1.47f / (r_bot - r_top);
     float metersPerLed = 1.0f / 60.0f;
     Vec3f dir(r_bot - r_top, -1.47f, 0);
     float stripLen = dir.Length();
-    float sinStrip = 1.47f / stripLen;
+    float sinStrip = height / stripLen;
     dir.Normalize();
     auto& seg = segment[j];
     float delta = abs(seg.second - seg.first);    
@@ -114,7 +114,7 @@ void setup() {
       float frac = step / delta;
       float ledDistAlongStrip = step * metersPerLed;
       p.x = frac * (r_bot - r_top) + r_top;
-      p.y = height - sinStrip * ledDistAlongStrip;
+      p.y = sinStrip * ledDistAlongStrip;
       p.z = 0;
       p = rot.Rotate(p);
     }
@@ -140,13 +140,15 @@ void loop() {
     c.push_back(randColor());
   }
 
+  Vec3f center(0, 0.75f, 0);
+
   for (const auto& li : led) {
-    Vec3f p = li.pos;
+    Vec3f p = li.pos - center;
+    p.y = 0;
     p.Normalize();
-    p *= 127.5f;
-    p += 127.5f;
+    p *= 25;
     CRGB& pc = strip[li.index];
-    pc = CRGB(p.x, p.y, p.z);
+    pc = CRGB(max(0.0f, p.x), max(0.0f, p.y), max(0.0f, p.z));
   }
 
   FastLED.show();
