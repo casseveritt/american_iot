@@ -1,3 +1,5 @@
+#include "linear.h"
+
 #include <FastLED.h>
 #include <math.h>
 
@@ -5,26 +7,17 @@
 #include <deque>
 #include <algorithm>
 
-#define LED0_PIN     7
-#define LED1_PIN     8
-#define NUM_LEDS_PER_STRIP    598
-#define NUM_STRIPS   2
-#define NUM_LEDS     (NUM_LEDS_PER_STRIP * NUM_STRIPS)
-#define PERIOD       250
+#define LED0_PIN 7
+#define LED1_PIN 8
+#define NUM_LEDS_PER_STRIP 598
+#define NUM_STRIPS 2
+#define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
+#define PERIOD 250
 
 using namespace std;
+using namespace r3;
 
 using Pair = pair<short, short>;
-
-// unused now, delete
-vector<Pair> deadRange = {
-  {0, 11},
-  {193, 205},
-  {388, 401},
-  {583, 628},
-  {809, 822},
-  {1002, 1015},
-};
 
 // Tree has 12 "spokes" each with about 90 lights.
 // Each strip has 6 spokes. Even spokes go up from
@@ -36,22 +29,28 @@ vector<Pair> deadRange = {
 // the tree.
 
 vector<Pair> segment = {
-  {11, 102},
-  {193, 101},
-  {205, 296},
-  {387, 295},
-  {401, 492},
-  {582, 491},
-  {628, 719},
-  {808, 718},
-  {822, 912},
-  {1001, 911},
-  {1015, 1105},
-  {1195, 1104}
+  { 11, 102 },
+  { 193, 101 },
+  { 205, 296 },
+  { 387, 295 },
+  { 401, 492 },
+  { 582, 491 },
+  { 628, 719 },
+  { 808, 718 },
+  { 822, 912 },
+  { 1001, 911 },
+  { 1015, 1105 },
+  { 1195, 1104 }
 };
 
-const CRGB colors[] = 
-  { CRGB::Red, CRGB::Green, CRGB::Blue, CRGB::Orange, CRGB::Cyan, CRGB::Magenta, CRGB::Yellow, CRGB::White };
+struct LedInfo {
+  uint32_t index;
+  Vec3f pos;
+};
+
+vector<LedInfo> led;
+
+const CRGB colors[] = { CRGB::Red, CRGB::Green, CRGB::Blue, CRGB::Orange, CRGB::Cyan, CRGB::Magenta, CRGB::Yellow, CRGB::White };
 
 CRGB strip[NUM_LEDS];
 
@@ -83,7 +82,7 @@ CRGB randColor() {
 void setup() {
 
   FastLED.addLeds<WS2812, LED0_PIN, GRB>(strip, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<WS2812, LED1_PIN, GRB>(strip + NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);     
+  FastLED.addLeds<WS2812, LED1_PIN, GRB>(strip + NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
   FastLED.setBrightness(8);
   for (int i = 0; i < NUM_LEDS; i++) {
     strip[i] = CRGB::Black;
@@ -91,9 +90,38 @@ void setup() {
   for (int i = 0; i < 102; i++) {
     c.push_back(randColor());
   }
+  for (int j = 0; j < 12; j++) {
+    float theta = (2.0f * M_PI * j) / 12.0f;
+    Rotationf rot(Vec3f(0, 1, 0), -theta);
+    float r_top = 0.04f; // meters
+    float r_bot = 0.31f;
+    float height = 1.47f;
+    float slope = -1.47f / (r_bot - r_top);
+    float metersPerLed = 1.0f / 60.0f;
+    Vec3f dir(r_bot - r_top, -1.47f, 0);
+    float stripLen = dir.Length();
+    float sinStrip = 1.47f / stripLen;
+    dir.Normalize();
+    auto& seg = segment[j];
+    float delta = abs(seg.second - seg.first);    
+    int incr = (j & 1) ? -1 : 1;
+    for (int i = seg.first; i != seg.second; i += incr) {
+      led.push_back(LedInfo());
+      auto& li = led.back();
+      li.index = pixaddr(i);
+      auto& p = li.pos;
+      float step = abs(i - seg.first);
+      float frac = step / delta;
+      float ledDistAlongStrip = step * metersPerLed;
+      p.x = frac * (r_bot - r_top) + r_top;
+      p.y = height - sinStrip * ledDistAlongStrip;
+      p.z = 0;
+      p = rot.Rotate(p);
+    }
+  }
 }
 
-template <typename T>
+template<typename T>
 T clamp(T val, T lo, T hi) {
   return max(min(val, hi), lo);
 }
@@ -112,24 +140,13 @@ void loop() {
     c.push_back(randColor());
   }
 
-  int incr[] = {1, -1};
-  for (int i = 0; i < 100; i++) {
-    float baseOffset = i / 3.0f + float(ifrac) / PERIOD;
-    float frac = baseOffset - floor(baseOffset);
-
-    int cidx = clamp(int(baseOffset), 0, 100);
-    CRGB c0 = c[cidx];
-    CRGB c1 = c[cidx+1];
-    auto col = c0.lerp8(c1, 255 * frac);
-    for (int j = 0; j < 12; j++) {
-      auto& seg = segment[j];
-      short lo = min(seg.first, seg.second);
-      short hi = max(seg.first, seg.second);
-      int v = clamp(short(seg.first + incr[j&1] * i), lo, hi);
-      if (v != seg.second) {
-        pix(v) = col;
-      }
-    }
+  for (const auto& li : led) {
+    Vec3f p = li.pos;
+    p.Normalize();
+    p *= 127.5f;
+    p += 127.5f;
+    CRGB& pc = strip[li.index];
+    pc = CRGB(p.x, p.y, p.z);
   }
 
   FastLED.show();
