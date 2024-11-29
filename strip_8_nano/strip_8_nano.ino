@@ -5,79 +5,83 @@
 #include <vector>
 #include <deque>
 
-#define LED0_PIN     7
-#define NUM_LEDS_PER_STRIP    8
-#define NUM_STRIPS   1
-#define NUM_LEDS     (NUM_LEDS_PER_STRIP * NUM_STRIPS)
-#define PERIOD       250
+#define LED0_PIN 7
+#define NUM_LEDS_PER_STRIP 8
+#define NUM_STRIPS 1
+#define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
+#define COLOR_PERIOD 730
+#define CYLON_PERIOD 500
 
 using namespace std;
 
-using Pair = pair<short, short>;
-
-const CRGB colors[] = 
-  { CRGB::Red, CRGB::Green, CRGB::Blue, CRGB::Orange, CRGB::Cyan, CRGB::Magenta, CRGB::Yellow, CRGB::White };
-
 CRGB strip[NUM_LEDS];
 
-uint32_t timestamp[3];
-int idx[3];
-uint32_t iteration = 0;
+uint32_t frame = 0;
 
 CRGB& pix(int index) {
   return strip[index];
 }
 
-deque<CRGB> c;
 
-CRGB randColor() {
-  CRGB c;
-  c.setHSV(rand() & 255, (rand() & 63) + 191, (rand() & 127) + 128);
-  return c;
-}
+struct RandColorQueue {
+  RandColorQueue(int size, uint32_t period_ms)
+    : period(period_ms) {
+    for (int i = 0; i < size; i++) {
+      c.push_back(randColor());
+    }
+  }
+
+  uint8_t update(uint32_t time_ms) {
+    if ((time_ms / period) != (ms / period)) {
+      c.pop_front();
+      c.push_back(randColor());
+    }
+    ms = time_ms;
+    return ((ms % period) * 255) / period;
+  }
+
+  static CRGB randColor() {
+    CRGB c;
+    c.setHSV(rand() & 255, (rand() & 63) + 191, rand() & 255);
+    return c;
+  }
+
+  deque<CRGB> c;
+  const uint32_t period;
+  uint32_t ms;
+};
+
+RandColorQueue cq(2, COLOR_PERIOD);
 
 void setup() {
 
   FastLED.addLeds<WS2812, LED0_PIN, GRB>(strip, NUM_LEDS_PER_STRIP);
-  FastLED.setBrightness(32);
+  FastLED.setBrightness(64);
   for (int i = 0; i < NUM_LEDS; i++) {
     strip[i] = CRGB::Black;
   }
-  for (int i = 0; i < 10; i++) {
-    c.push_back(randColor());
-  }
 }
 
-template <typename T>
-T clamp(T val, T lo, T hi) {
-  return min(max(val, lo), hi);
+// triangle wave between 0.0f and 1.0f
+float triangle(uint32_t time, uint32_t period) {
+
+  return abs(2.0f * ((time % period) / float(period - 1)) - 1.0f);
 }
 
 void loop() {
-  idx[0] = iteration % 3;
-  idx[1] = (iteration + 2) % 3;
-  idx[2] = (iteration + 1) % 3;
-  uint32_t ms = timestamp[idx[0]] = millis();
+  uint32_t ms = millis();
 
-  int offset = ms / PERIOD;
-  int ifrac = ms % PERIOD;
+  uint8_t cfrac = cq.update(ms);
+  CRGB col = cq.c[0].lerp8(cq.c[1], cfrac);
 
-  if (ifrac < (timestamp[idx[1]]) % PERIOD) {
-    c.pop_front();
-    c.push_back(randColor());
-  }
+  float v = triangle(ms, CYLON_PERIOD);
 
-  for (int i = 0; i < 8; i++) {
-    float baseOffset = i + float(ifrac) / PERIOD;
-    float frac = baseOffset - floor(baseOffset);
-    int cidx = clamp(int(baseOffset), 0, 10);
-
-    CRGB c0 = c[cidx];
-    CRGB c1 = c[cidx+1];
-    CRGB col = c0.lerp8(c1, fract8(frac*255));
-    pix(i) = col;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    float fpos = float(i) / (NUM_LEDS - 1);
+    float fdist = max(0.0f, 3.0f * (1.0f - abs(v - fpos)) - 2.0f);
+    float func = pow(fdist, 4.0f);
+    pix(i) = col.scale8(255 * func);
   }
 
   FastLED.show();
-  iteration++;
 }
