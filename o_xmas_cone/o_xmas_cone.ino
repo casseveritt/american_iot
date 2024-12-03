@@ -58,6 +58,8 @@ uint32_t timestamp[3];
 int idx[3];
 uint32_t iteration = 0;
 
+float yrot = 0.0f;
+
 int pixaddr(int index) {
   if (index >= NUM_LEDS_PER_STRIP) {
     // second strip runs in the opposite direction from the first
@@ -146,11 +148,16 @@ void loop() {
     Vec3f p = li.pos - center;
     p.y = 0;
     p.Normalize();
+    p = Rotationf(Vec3f(0, 1, 0), yrot).Rotate(p);
+    p.x = pow(p.x, 5.0f);
+    p.z = pow(p.z, 5.0f);
+
     p *= 25;
     CRGB& pc = strip[li.index];
     pc = CRGB(max(0.0f, p.x), max(0.0f, p.y), max(0.0f, p.z));
   }
 
+  yrot += 2.0f * M_PI / 360.0f;
   FastLED.show();
   iteration++;
 }
