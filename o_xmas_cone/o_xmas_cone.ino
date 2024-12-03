@@ -13,7 +13,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 #define PERIOD 250
-#define MODE 3
+#define MODE 4
 
 using namespace std;
 using namespace r3;
@@ -98,7 +98,7 @@ void setup() {
 
   FastLED.addLeds<WS2812, LED0_PIN, GRB>(strip, NUM_LEDS_PER_STRIP);
   FastLED.addLeds<WS2812, LED1_PIN, GRB>(strip + NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
-  FastLED.setBrightness(64);
+  FastLED.setBrightness(255);
   for (int i = 0; i < NUM_LEDS; i++) {
     strip[i] = CRGB::Black;
   }
@@ -226,6 +226,24 @@ void twist() {
   yrot += 2.0f * M_PI / 60.0f;
 }
 
+void screw() {
+  auto ms = timestamp[idx[0]];
+  float twistRadsPerMeter = 2.0 * M_PI * 2.5f; //(sin((2.0f * M_PI * ms) / 12000.0f) + 1.0);
+
+  for (const auto& li : led) {
+    Vec3f p = li.pos;
+    float y = 1.5f * pow(p.y / 1.5f, 2.0f);
+    p = Rotationf(Vec3f(0, 1, 0), -twistRadsPerMeter * y + yrot).Rotate(p);
+    p.y = 0;
+    p.Normalize();
+    CRGB& pc = strip[li.index];
+    pc = CRGB::Black;
+    pc = pc.lerp8(p.x > 0 ? CRGB::Green : CRGB::Red, uint8_t(max(0.0f, p.x * p.x * 255.0f)));
+    pc.nscale8(8);
+  }
+  yrot += 2.0f * M_PI / 180.0f;
+}
+
 void loop() {
   idx[0] = iteration % 3;
   idx[1] = (iteration + 2) % 3;
@@ -243,6 +261,9 @@ void loop() {
       break;
     case 3:
       twist();
+      break;
+    case 4:
+      screw();
       break;
     default:
       break;
