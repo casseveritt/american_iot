@@ -214,7 +214,7 @@ void rot_y() {
 
 void twist() {
   auto ms = timestamp[idx[0]];
-  float twistRadsPerMeter = 2.0 * M_PI * 5.0f * sin((2.0f * M_PI * ms) / 12000.0f);
+  float twistRadsPerMeter = 2.0 * M_PI * 2.5f * (sin((2.0f * M_PI * ms) / 12000.0f) + 1.0);
 
   for (const auto& li : led) {
     Vec3f p = li.pos;
