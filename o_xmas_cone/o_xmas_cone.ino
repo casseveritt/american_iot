@@ -13,7 +13,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 #define PERIOD 250
-#define MODE 4
+#define MODE 5
 
 using namespace std;
 using namespace r3;
@@ -246,6 +246,26 @@ void screw() {
   yrot += 2.0f * M_PI / 180.0f;
 }
 
+void clear(CRGB color) {
+  for (const auto& li : led) {
+    CRGB& pc = strip[li.index];
+    pc = color;
+    pc.nscale8(8);
+  }
+}
+
+void drawFrameTime() {
+  int dt = timestamp[idx[0]] - timestamp[idx[1]];
+
+  auto seg = segment[0];
+  int incr = seg.first < seg.second ? 1 : -1;
+  for (int i = 0; i < min(dt, 50); i++) {
+    auto& pc = pix(seg.first + i * incr);
+    pc = ((i % 5) != 0 ) ? CRGB::BlueViolet : CRGB::Orange;
+    pc.nscale8(8);
+  }
+}
+
 void loop() {
   idx[0] = iteration % 3;
   idx[1] = (iteration + 2) % 3;
@@ -267,9 +287,15 @@ void loop() {
     case 4:
       screw();
       break;
+    case 5:
+      clear(CRGB::Red);
+      break;
     default:
       break;
   }
+
+  drawFrameTime();
+
   FastLED.show();
   iteration++;
 }
