@@ -13,7 +13,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 #define PERIOD 250
-#define MODE 5
+#define MODE 4
 
 using namespace std;
 using namespace r3;
@@ -221,7 +221,7 @@ void twist() {
     p = Rotationf(Vec3f(0, 1, 0), -twistRadsPerMeter * p.y + yrot).Rotate(p);
     CRGB& pc = strip[li.index];
     pc = p.x > 0 ? CRGB::Blue : CRGB::Black;
-    pc.scale8(8);
+    pc.nscale8(8);
   }
   yrot += 2.0f * M_PI / 60.0f;
 }
@@ -255,13 +255,13 @@ void clear(CRGB color) {
 }
 
 void drawFrameTime() {
-  int dt = timestamp[idx[0]] - timestamp[idx[1]];
+  int dt = (timestamp[idx[0]] - timestamp[idx[1]]) / 2;
 
   auto seg = segment[0];
   int incr = seg.first < seg.second ? 1 : -1;
-  for (int i = 0; i < min(dt, 50); i++) {
+  for (int i = 0; i < min(50, dt); i++) {
     auto& pc = pix(seg.first + i * incr);
-    pc = ((i % 5) != 0 ) ? CRGB::BlueViolet : CRGB::Orange;
+    pc = ((i % 5) != 0) ? CRGB::BlueViolet : CRGB::Orange;
     pc.nscale8(8);
   }
 }
