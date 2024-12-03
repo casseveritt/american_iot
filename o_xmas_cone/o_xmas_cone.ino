@@ -13,7 +13,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 #define PERIOD 250
-#define MODE 2
+#define MODE 3
 
 using namespace std;
 using namespace r3;
@@ -141,90 +141,112 @@ T clamp(T val, T lo, T hi) {
   return max(min(val, hi), lo);
 }
 
-void loop() {
-  if (MODE == 2) {
-    Sphere s = Sphere();
-    s.pos = Vec3f(0, 0.75, 0);
-    s.radius = 0.5;
-    for (const auto& li : led) {
-      CRGB& pc = strip[li.index];
-      pc = s.isInside(li.pos) ? CRGB(32, 0, 0) : CRGB::Black;
+void loop_sphere() {
+  Sphere s = Sphere();
+  s.pos = Vec3f(0, 0.75, 0);
+  s.radius = 0.5;
+  for (const auto& li : led) {
+    CRGB& pc = strip[li.index];
+    pc = s.isInside(li.pos) ? CRGB(32, 0, 0) : CRGB::Black;
+  }
+}
+
+void luke_sphere() {
+  Sphere s = Sphere();
+  s.pos = Vec3f(0, 0.75, 0);
+  s.radius = 0.5;
+  for (const auto& li : led) {
+    CRGB& pc = strip[li.index];
+    if ((s.pos - li.pos).Length() <= s.radius) {
+      pc = CRGB(1.0f, 0.0f, 0.0f);
     }
   }
-#if 0
-  if (MODE == 0) { // Spheres
 
+  uint32_t ms = timestamp[idx[0]] = millis();
+  if (ms >= delayTime) {
     Sphere s = Sphere();
-    s.pos = Vec3f(0, 0.75, 0);
-    s.radius = 0.5;
+    s.pos = Vec3f(float(rand() % 51) / 100.0, -0.5, float(rand() % 51) / 100.0);
+    s.vel = float((rand() % 41) + 10) / 1000;
+    s.radius = float((rand() % 21) + 10) / 100;
+    s.color = rand() % 3;
+    spheres.push_back(s);
+    delayTime = int(ms) + ((rand() % 900) + 100);
+  }
+  for (int i = 0; i < spheres.size(); i++) {
+    Sphere& s = spheres[i];
+    s.pos.y += s.vel;
+    //if (s.pos.y >= 2.0) { // Remove spheres over the tree
+    //  spheres.erase(std::remove(spheres.begin(), spheres.end(), i), spheres.end());
+    //}
     for (const auto& li : led) {
       CRGB& pc = strip[li.index];
-      if ((s.pos-li.pos).Length() <= s.radius) {
-        pc = CRGB(1.0f, 0.0f, 0.0f);
-      }
-    }
-  
-    uint32_t ms = timestamp[idx[0]] = millis();
-    if (ms >= delayTime) {
-      Sphere s = Sphere();
-      s.pos = Vec3f(float(rand() % 51) / 100.0, -0.5, float(rand() % 51) / 100.0);
-      s.vel =  float((rand() % 41) + 10) / 1000;
-      s.radius =  float((rand() % 21) + 10) / 100;
-      s.color = rand() % 3;
-      spheres.push_back(s);
-      delayTime = int(ms) + ((rand() % 900) + 100);
-    }
-    for (int i=0;i<spheres.size();i++){
-      Sphere& s = spheres[i];
-      s.pos.y += s.vel;
-      //if (s.pos.y >= 2.0) { // Remove spheres over the tree
-      //  spheres.erase(std::remove(spheres.begin(), spheres.end(), i), spheres.end());
-      //}
-      for (const auto& li : led) {
-        CRGB& pc = strip[li.index];
-        if ((s.pos-li.pos).Length() <= s.radius) {
-          if (s.color == 0){
-            pc = CRGB(1.0f, 0.0f, 0.0f);
-          } else if (s.color == 1) {
-            pc = CRGB(0.0f, 1.0f, 0.0f);
-          } else {
-            pc = CRGB(0.0f, 0.0f, 1.0f);
-          }
+      if ((s.pos - li.pos).Length() <= s.radius) {
+        if (s.color == 0) {
+          pc = CRGB(1.0f, 0.0f, 0.0f);
+        } else if (s.color == 1) {
+          pc = CRGB(0.0f, 1.0f, 0.0f);
+        } else {
+          pc = CRGB(0.0f, 0.0f, 1.0f);
         }
       }
     }
   }
-  if (MODE == 1) {
-    idx[0] = iteration % 3;
-    idx[1] = (iteration + 2) % 3;
-    idx[2] = (iteration + 1) % 3;
-    uint32_t ms = timestamp[idx[0]] = millis();
+}
 
-    int offset = ms / PERIOD;
-    int ifrac = ms % PERIOD;
+void rot_y() {
+  Vec3f center(0, 0.75f, 0);
 
-    if (ifrac < (timestamp[idx[1]]) % PERIOD) {
-      c.pop_front();
-      c.push_back(randColor());
-    }
+  for (const auto& li : led) {
+    Vec3f p = li.pos - center;
+    p.y = 0;
+    p.Normalize();
+    p = Rotationf(Vec3f(0, 1, 0), yrot).Rotate(p);
+    p.x = pow(p.x, 5.0f);
+    p.z = pow(p.z, 5.0f);
 
-    Vec3f center(0, 0.75f, 0);
+    p *= 25;
+    CRGB& pc = strip[li.index];
+    pc = CRGB(max(0.0f, p.x), max(0.0f, p.y), max(0.0f, p.z));
+  }
 
-    for (const auto& li : led) {
-      Vec3f p = li.pos - center;
-      p.y = 0;
-      p.Normalize();
-      p = Rotationf(Vec3f(0, 1, 0), yrot).Rotate(p);
-      p.x = pow(p.x, 5.0f);
-      p.z = pow(p.z, 5.0f);
+  yrot += 2.0f * M_PI / 60.0f;
+}
 
-      p *= 25;
-      CRGB& pc = strip[li.index];
-      pc = CRGB(max(0.0f, p.x), max(0.0f, p.y), max(0.0f, p.z));
-    }
+void twist() {
+  auto ms = timestamp[idx[0]];
+  float twistRadsPerMeter = 2.0 * M_PI * 5.0f * sin((2.0f * M_PI * ms) / 12000.0f);
 
-    yrot += 2.0f * M_PI / 60.0f;
-#endif
+  for (const auto& li : led) {
+    Vec3f p = li.pos;
+    p = Rotationf(Vec3f(0, 1, 0), -twistRadsPerMeter * p.y + yrot).Rotate(p);
+    CRGB& pc = strip[li.index];
+    pc = p.x > 0 ? CRGB::Blue : CRGB::Black;
+    pc.scale8(8);
+  }
+  yrot += 2.0f * M_PI / 60.0f;
+}
+
+void loop() {
+  idx[0] = iteration % 3;
+  idx[1] = (iteration + 2) % 3;
+  idx[2] = (iteration + 1) % 3;
+  uint32_t ms = timestamp[idx[0]] = millis();
+  switch (MODE) {
+    case 0:
+      luke_sphere();
+      break;
+    case 1:
+      rot_y();
+      break;
+    case 2:
+      loop_sphere();
+      break;
+    case 3:
+      twist();
+      break;
+    default:
+      break;
+  }
   FastLED.show();
   iteration++;
 }
