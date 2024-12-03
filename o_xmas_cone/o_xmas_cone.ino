@@ -237,8 +237,10 @@ void screw() {
     p.y = 0;
     p.Normalize();
     CRGB& pc = strip[li.index];
-    pc = CRGB::Black;
-    pc = pc.lerp8(p.x > 0 ? CRGB::Green : CRGB::Red, uint8_t(max(0.0f, p.x * p.x * 255.0f)));
+    pc = CRGB::Red;
+    float x = p.x * 0.5f + 0.5f;
+    float ss = x * x * x * (x * (6.0f * x - 15.0f) + 10.0f);
+    pc = pc.lerp8(CRGB::Green, uint8_t(max(0.0f, ss * 255.0f)));
     pc.nscale8(8);
   }
   yrot += 2.0f * M_PI / 180.0f;
