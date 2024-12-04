@@ -13,7 +13,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 #define PERIOD 250
-#define MODE 4
+#define MODE 2
 
 using namespace std;
 using namespace r3;
@@ -52,10 +52,13 @@ struct LedInfo {
 struct Sphere {
   Vec3f pos;
   float vel;
-  float radius;
-  int color;
+  float radiusSquared;
+  CRGB color;
+  float dist(const Vec3f& p) {
+    return (p - pos).Length();
+  }
   bool isInside(const Vec3f& p) const {
-    return (p - pos).Length() < radius;
+    return (p - pos).LengthSquared() < radiusSquared;
   }
 };
 
@@ -99,7 +102,7 @@ void setup() {
   FastLED.addLeds<WS2812, LED0_PIN, GRB>(strip, NUM_LEDS_PER_STRIP);
   FastLED.addLeds<WS2812, LED1_PIN, GRB>(strip + NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
   FastLED.setBrightness(255);
-  
+
   for (int i = 0; i < NUM_LEDS; i++) {
     strip[i] = CRGB::Black;
   }
@@ -114,7 +117,7 @@ void setup() {
     float height = 1.47f;
     //float slope = -1.47f / (r_bot - r_top);
     float metersPerLed = 1.0f / 60.0f;
-    Vec3f dir(r_bot - r_top, -1.47f, 0);
+    Vec3f dir(r_top - r_bot, 1.47f, 0);
     float stripLen = dir.Length();
     float sinStrip = height / stripLen;
     dir.Normalize();
@@ -129,7 +132,7 @@ void setup() {
       float step = abs(i - seg.first);
       float frac = step / delta;
       float ledDistAlongStrip = step * metersPerLed;
-      p.x = frac * (r_bot - r_top) + r_top;
+      p.x = (1.0f - frac) * (r_bot - r_top) + r_top;
       p.y = sinStrip * ledDistAlongStrip;
       p.z = 0;
       p = rot.Rotate(p);
@@ -142,54 +145,69 @@ T clamp(T val, T lo, T hi) {
   return max(min(val, hi), lo);
 }
 
-void loop_sphere() {
-  Sphere s = Sphere();
-  s.pos = Vec3f(0, 0.75, 0);
-  s.radius = 0.5;
+void luke_sphere() {
+  Sphere sphere = Sphere();
+  sphere.pos = Vec3f(0.0, 0.5f * sin((iteration % 100) / 100.0 * 2 * M_PI) + 0.75, 0.0);
+  sphere.radiusSquared = pow(0.25f, 2);
+
+  const Sphere s = sphere;
+
   for (const auto& li : led) {
     CRGB& pc = strip[li.index];
-    pc = s.isInside(li.pos) ? CRGB(32, 0, 0) : CRGB::Black;
+    bool inside = s.isInside(li.pos);
+    pc = inside ? CRGB::Red : CRGB::Black;
+    pc.nscale8(8);
   }
 }
 
-void luke_sphere() {
-  Sphere s = Sphere();
-  s.pos = Vec3f(0, 0.75, 0);
-  s.radius = 0.5;
-  for (const auto& li : led) {
-    CRGB& pc = strip[li.index];
-    if ((s.pos - li.pos).Length() <= s.radius) {
-      pc = CRGB(1.0f, 0.0f, 0.0f);
-    }
-  }
-
+void loop_sphere() {
   uint32_t ms = timestamp[idx[0]] = millis();
   if (ms >= delayTime) {
     Sphere s = Sphere();
-    s.pos = Vec3f(float(rand() % 51) / 100.0, -0.5, float(rand() % 51) / 100.0);
-    s.vel = float((rand() % 41) + 10) / 1000;
-    s.radius = float((rand() % 21) + 10) / 100;
-    s.color = rand() % 3;
+    s.pos = Vec3f(-0.5, float(rand() % 151) / 100.0, float((rand() % 51) - 25) / 100.0);
+    s.vel = float((rand() % 11) + 5) / 1000;
+    s.radiusSquared = pow((float((rand() % 16) + 5) / 100), 2);
+    s.color = randColor();
     spheres.push_back(s);
-    delayTime = int(ms) + ((rand() % 900) + 100);
+    delayTime = int(ms) + ((rand() % 200) + 100);
   }
+
   for (int i = 0; i < spheres.size(); i++) {
     Sphere& s = spheres[i];
-    s.pos.y += s.vel;
-    //if (s.pos.y >= 2.0) { // Remove spheres over the tree
-    //  spheres.erase(std::remove(spheres.begin(), spheres.end(), i), spheres.end());
-    //}
-    for (const auto& li : led) {
-      CRGB& pc = strip[li.index];
-      if ((s.pos - li.pos).Length() <= s.radius) {
-        if (s.color == 0) {
-          pc = CRGB(1.0f, 0.0f, 0.0f);
-        } else if (s.color == 1) {
-          pc = CRGB(0.0f, 1.0f, 0.0f);
-        } else {
-          pc = CRGB(0.0f, 0.0f, 1.0f);
+    s.pos.x += s.vel;
+  }
+
+  for (int i = 0; i < spheres.size(); i++) {
+    Sphere& s = spheres[i];
+    if (s.pos.x > 1.0f) {
+      Sphere tempS = spheres[spheres.size() - 1];
+      spheres[spheres.size() - 1] = spheres[i];
+      spheres[i] = tempS;
+      spheres.pop_back();
+    }
+  }
+
+  Rotationf rotworld(Vec3f(0, 1, 0), ToRadians(70.0f));
+
+  for (auto li : led) {
+    CRGB& pc = strip[li.index];
+    li.pos = rotworld.Rotate(li.pos);
+    bool outsideSpheres = true;
+    float minDist = 100000;
+    for (int i = 0; i < spheres.size(); i++) {
+      Sphere& s = spheres[i];
+      if (s.isInside(li.pos)) {
+        float dist = s.dist(li.pos);
+        if (dist < minDist) {
+          minDist = dist;
+          outsideSpheres = false;
+          pc = s.color;
+          pc.nscale8(uint8_t(255 * pow(1.0 - dist / sqrt(s.radiusSquared), 2.0f)));
         }
       }
+    }
+    if (outsideSpheres) {
+      pc = CRGB::Black;
     }
   }
 }
@@ -229,7 +247,7 @@ void twist() {
 
 void screw() {
   auto ms = timestamp[idx[0]];
-  float twistRadsPerMeter = 2.0 * M_PI * 2.5f; //(sin((2.0f * M_PI * ms) / 12000.0f) + 1.0);
+  float twistRadsPerMeter = 2.0 * M_PI * 2.5f;  //(sin((2.0f * M_PI * ms) / 12000.0f) + 1.0);
 
   for (const auto& li : led) {
     Vec3f p = li.pos;
@@ -248,8 +266,6 @@ void screw() {
   while (yrot > (2.0f * M_PI)) {
     yrot -= 2.0f * M_PI;
   }
-  
-  
 }
 
 void clear(CRGB color) {
