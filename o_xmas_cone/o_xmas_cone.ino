@@ -99,6 +99,7 @@ void setup() {
   FastLED.addLeds<WS2812, LED0_PIN, GRB>(strip, NUM_LEDS_PER_STRIP);
   FastLED.addLeds<WS2812, LED1_PIN, GRB>(strip + NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
   FastLED.setBrightness(255);
+  
   for (int i = 0; i < NUM_LEDS; i++) {
     strip[i] = CRGB::Black;
   }
@@ -243,7 +244,12 @@ void screw() {
     pc = pc.lerp8(CRGB::Green, uint8_t(max(0.0f, ss * 255.0f)));
     pc.nscale8(8);
   }
-  yrot += 2.0f * M_PI / 180.0f;
+  yrot += 2.0f * M_PI / 45.0f;
+  while (yrot > (2.0f * M_PI)) {
+    yrot -= 2.0f * M_PI;
+  }
+  
+  
 }
 
 void clear(CRGB color) {
