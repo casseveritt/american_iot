@@ -51,7 +51,7 @@
 #include <assert.h>
 #include <math.h>
 
-#include <algorithm>
+//#include <algorithm>
 
 #define R3_RAD_TO_DEG 57.2957795130823208767981548141052
 #define R3_DEG_TO_RAD 0.0174532925199432957692369076848861

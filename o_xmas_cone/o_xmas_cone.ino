@@ -51,9 +51,34 @@ struct LedInfo {
 
 struct Sphere {
   Vec3f pos;
-  float vel;
+  float radius;
   float radiusSquared;
+  float vel;
   CRGB color;
+
+  Sphere() {}
+  Sphere(CRGB colorIn) {
+    color = colorIn;
+  }
+  void setPosXY(float offset = -0.5) { // Set position of sphere along the XY plane of the tree
+    pos = Vec3f(float((rand() % 63) - 31) / 100.0f, float(rand() % 148) / 100.0f, offset);
+  }
+  void setPosYZ(float offset = -0.5) { // Set position of sphere along the YZ plane of the tree
+    pos = Vec3f(offset, float(rand() % 148) / 100.0f, float((rand() % 63) - 31) / 100.0f);
+  }
+  void setPosXZ(float offset = -0.5) { // Set position of sphere along the XZ plane of the tree
+    pos = Vec3f(float((rand() % 63) - 31) / 100.0f, offset, float((rand() % 63) - 31) / 100.0f);
+  }
+  void setRad(int upper, int lower) { // Set radius of sphere in centemeters
+    radius = float((rand() % (upper - lower + 1)) + lower) / 100.0f;
+    radiusSquared = pow(radius, 2);
+  }
+  void setVel(int min, int max) { // Set sphere velocity in thousandths of a meter per second
+    vel = float((rand() % (max - min + 1)) + min) / 1000.0f;
+  }
+  void setCol(CRGB colorIn) {
+    color = colorIn;
+  }
   float dist(const Vec3f& p) {
     return (p - pos).Length();
   }
@@ -163,11 +188,10 @@ void luke_sphere() {
 void loop_sphere() {
   uint32_t ms = timestamp[idx[0]] = millis();
   if (ms >= delayTime) {
-    Sphere s = Sphere();
-    s.pos = Vec3f(-0.5, float(rand() % 151) / 100.0, float((rand() % 51) - 25) / 100.0);
-    s.vel = float((rand() % 11) + 5) / 1000;
-    s.radiusSquared = pow((float((rand() % 16) + 5) / 100), 2);
-    s.color = randColor();
+    Sphere s = Sphere(randColor());
+    s.setPosYZ();
+    s.setVel(5, 15);
+    s.setRad(5, 20);
     spheres.push_back(s);
     delayTime = int(ms) + ((rand() % 200) + 100);
   }
@@ -202,7 +226,7 @@ void loop_sphere() {
           minDist = dist;
           outsideSpheres = false;
           pc = s.color;
-          pc.nscale8(uint8_t(255 * pow(1.0 - dist / sqrt(s.radiusSquared), 2.0f)));
+          pc.nscale8(uint8_t(255 * pow(1.0 - dist / s.radius, 2.0f)));
         }
       }
     }
