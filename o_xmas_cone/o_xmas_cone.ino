@@ -20,6 +20,7 @@ constexpr float k2pi = 2.0f * M_PI;
 
 int mode;
 int32_t countdown = -1;
+uint32_t showTime = 0;
 
 using namespace std;
 using namespace r3;
@@ -333,13 +334,27 @@ void drawFrameTime() {
 
 void drawFrameTimeLuke() {
   int dt = (timestamp[idx[0]] - timestamp[idx[1]]);  // Time between frames in ms
-  int tenMs = dt / 10;                               // Number of ms between frames in multiples of 10 rounded down
-  int remainder = dt % 10;                           // Remainder
 
   constexpr int beginBarPix = 598;  // Should be +598, but it breaks for some reason
-  constexpr int endBarPix = 618;
+  constexpr int endBarPix = 623;
   auto barpix = [](int i) -> CRGB& {
     return pix(i + beginBarPix);
+  };
+
+  auto drawFromBase = [barpix](int base, int dt, int maxPixels, CRGB primary, CRGB secondary) {
+    int tenMs = dt / 10;      // Number of ms between frames in multiples of 10 rounded down
+    int remainder = dt % 10;  // Remainder
+    for (int i = 0; i < min(maxPixels, tenMs); i++) {
+      auto& pc = barpix(base + i);
+      pc = ((i % 5) != 4) ? primary : secondary;
+      pc.nscale8(10);
+    }
+
+    if (tenMs < maxPixels) {
+      auto& pc = barpix(base + tenMs);
+      pc = ((tenMs % 5) != 4) ? primary : secondary;
+      pc.nscale8( millis() % 10 <= remainder ? 10 : 0);
+    }
   };
 
   // clear
@@ -348,17 +363,10 @@ void drawFrameTimeLuke() {
     pc = CRGB::Black;
   }
 
-  for (int i = 0; i < min(10, tenMs); i++) {
-    auto& pc = barpix(i);
-    pc = ((i % 5) != 4) ? CRGB::Blue : CRGB::Green;
-    pc.nscale8(10);
-  }
+  drawFromBase(0, showTime, 4, CRGB::Red, CRGB::Yellow);
+  drawFromBase(5, dt - showTime, 8, CRGB::Cyan, CRGB::Magenta);
+  drawFromBase(14, dt, 10, CRGB::Blue, CRGB::Green);
 
-  if (tenMs < 10) {
-    auto& pc = barpix(tenMs);
-    pc = ((tenMs % 5) != 4) ? CRGB::Blue : CRGB::Green;
-    pc.nscale8(iteration % 10 <= remainder ? 10 : 0);
-  }
   /*
   for (int i = 0; i < min(10, remainder); i++) {
     auto& pc = pix(607 + tenMs + 1 - i);
@@ -415,6 +423,8 @@ void loop() {
 
   drawFrameTimeLuke();
 
+  const uint32_t beforeShow = millis();
   FastLED.show();
+  showTime = millis() - beforeShow;
   iteration++;
 }
