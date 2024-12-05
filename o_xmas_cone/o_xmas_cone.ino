@@ -14,7 +14,8 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 #define PERIOD 250
-#define MODE 2
+int mode;
+int32_t countdown = -1;
 
 using namespace std;
 using namespace r3;
@@ -128,7 +129,6 @@ void setup() {
   FastLED.addLeds<WS2812, LED0_PIN, GRB>(strip, NUM_LEDS_PER_STRIP);
   FastLED.addLeds<WS2812, LED1_PIN, GRB>(strip + NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
   FastLED.setBrightness(255);
-
   for (int i = 0; i < NUM_LEDS; i++) {
     strip[i] = CRGB::Black;
   }
@@ -164,6 +164,7 @@ void setup() {
       p = rot.Rotate(p);
     }
   }
+  srand(analogRead(A0) + millis());
 }
 
 template<typename T>
@@ -334,19 +335,19 @@ void drawFrameTimeLuke() {
   int tenMs = dt / 10; // Number of ms between frames in multiples of 10 rounded down
   int remainder = dt % 10; // Remainder
 
-  for (int i = 0; i < 20; i++) {
+  for (int i = 0; i < 29; i++) {
     auto& pc = pix(i + 598); // Should be +598, but it breaks for some reason
     pc = CRGB::Black;
   }
   for (int i = 0; i < min(10, tenMs); i++) {
     auto& pc = pix(i + 598); // Should be +598, but it breaks for some reason
     pc = ((i % 5) != 4) ? CRGB::Blue : CRGB::Green;
-    pc.nscale8(8);
+    pc.nscale8(4);
   }
   for (int i = 0; i < min(10, remainder); i++) {
     auto& pc = pix(607 + tenMs - i);
     pc = ((i % 5) != 4) ? CRGB::Yellow : CRGB::Red;
-    pc.nscale8(8);
+    pc.nscale8(4);
   }
 
 }
@@ -356,33 +357,42 @@ void loop() {
   idx[1] = (iteration + 2) % 3;
   idx[2] = (iteration + 1) % 3;
   uint32_t ms = timestamp[idx[0]] = millis();
-  switch (MODE) {
+  int dt = ms - timestamp[idx[1]];
+  countdown -= dt;
+  const int modeSwapTime = 300 * 1000; // Time to change modes in seconds
+
+  if (countdown < 0) {
+    countdown = modeSwapTime;
+    int current = mode;
+    while (mode == current) mode = rand() % 5;
+  }
+  switch (mode) {
     case 0:
-      luke_sphere();
-      break;
-    case 1:
       rot_y();
       break;
-    case 2:
-      loop_sphere();
-      break;
-    case 3:
+    case 1:
       twist();
       break;
-    case 4:
+    case 2:
       screw();
+      break;
+    case 3:
+      loop_sphere();
+      break;
+    case 4:
+      perlin();
       break;
     case 5:
       clear(CRGB::Red);
       break;
     case 6:
-      perlin();
+      luke_sphere();
       break;
     default:
       break;
   }
 
-  drawFrameTime();
+  drawFrameTimeLuke();
 
   FastLED.show();
   iteration++;
