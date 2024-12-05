@@ -1,4 +1,5 @@
 #include "linear.h"
+#include "perlin.h"
 
 #include <FastLED.h>
 #include <math.h>
@@ -13,7 +14,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 #define PERIOD 250
-#define MODE 2
+#define MODE 6
 
 using namespace std;
 using namespace r3;
@@ -300,6 +301,15 @@ void clear(CRGB color) {
   }
 }
 
+void perlin() {
+  for (const auto& li : led) {
+    CRGB& pc = strip[li.index];
+    Vec3f p = li.pos * 7;
+    float noise = abs(ImprovedNoise::noise(p.x - (iteration * 0.01f), p.y, p.z));
+    pc.setHSV(64, 255, uint8_t(noise * 255));
+  }
+}
+
 void drawFrameTime() {
   int dt = (timestamp[idx[0]] - timestamp[idx[1]]) / 2;
 
@@ -335,6 +345,9 @@ void loop() {
       break;
     case 5:
       clear(CRGB::Red);
+      break;
+    case 6:
+      perlin();
       break;
     default:
       break;
