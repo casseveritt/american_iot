@@ -257,8 +257,8 @@ void rot_y() {
     p.y = 0;
     p.Normalize();
     p = Rotationf(Vec3f(0, 1, 0), yrot).Rotate(p);
-    p.x *= p.x * p.x * p.x * p.x; // pow(p.x, 5.0f);
-    p.z *= p.z * p.z * p.z * p.z; // pow(p.z, 5.0f);
+    p.x *= p.x * p.x * p.x * p.x;  // pow(p.x, 5.0f);
+    p.z *= p.z * p.z * p.z * p.z;  // pow(p.z, 5.0f);
 
     p *= 25;
     CRGB& pc = strip[li.index];
@@ -336,20 +336,36 @@ void drawFrameTimeLuke() {
   int tenMs = dt / 10;                               // Number of ms between frames in multiples of 10 rounded down
   int remainder = dt % 10;                           // Remainder
 
-  for (int i = 0; i < 29; i++) {
-    auto& pc = pix(i + 598);  // Should be +598, but it breaks for some reason
+  constexpr int beginBarPix = 598;  // Should be +598, but it breaks for some reason
+  constexpr int endBarPix = 618;
+  auto barpix = [](int i) -> CRGB& {
+    return pix(i + beginBarPix);
+  };
+
+  // clear
+  for (int i = 0; i < (endBarPix - beginBarPix); i++) {
+    auto& pc = barpix(i);
     pc = CRGB::Black;
   }
+
   for (int i = 0; i < min(10, tenMs); i++) {
-    auto& pc = pix(i + 598);  // Should be +598, but it breaks for some reason
+    auto& pc = barpix(i);
     pc = ((i % 5) != 4) ? CRGB::Blue : CRGB::Green;
-    pc.nscale8(4);
+    pc.nscale8(10);
   }
+
+  if (tenMs < 10) {
+    auto& pc = barpix(tenMs);
+    pc = ((tenMs % 5) != 4) ? CRGB::Blue : CRGB::Green;
+    pc.nscale8(iteration % 10 <= remainder ? 10 : 0);
+  }
+  /*
   for (int i = 0; i < min(10, remainder); i++) {
-    auto& pc = pix(607 + tenMs - i);
+    auto& pc = pix(607 + tenMs + 1 - i);
     pc = ((i % 5) != 4) ? CRGB::Yellow : CRGB::Red;
     pc.nscale8(4);
   }
+  */
 }
 
 void loop() {
