@@ -14,7 +14,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 #define PERIOD 250
-#define MODE 6
+#define MODE 2
 
 using namespace std;
 using namespace r3;
@@ -186,33 +186,40 @@ void luke_sphere() {
   }
 }
 
+int spheresRotation = 1100;
+void setDelayTime(uint32_t ms, int max, int min) {
+  delayTime = int(ms) + ((rand() % (max - min + 1)) + min);
+}
+
 void loop_sphere() {
   uint32_t ms = timestamp[idx[0]] = millis();
-  if (ms >= delayTime) {
+  int radiusMax = 10;
+  if (ms >= delayTime && spheres.size() < 50) {
     Sphere s = Sphere(randColor());
     s.setPosYZ();
     s.setVel(5, 15);
-    s.setRad(5, 20);
+    s.setRad(3, 10);
     spheres.push_back(s);
-    delayTime = int(ms) + ((rand() % 200) + 100);
+    setDelayTime(ms, 333, 100);
   }
 
-  for (int i = 0; i < spheres.size(); i++) {
+  for (int i = 0; i < spheres.size(); i++) { // Moves all the spheres
     Sphere& s = spheres[i];
     s.pos.x += s.vel;
   }
 
-  for (int i = 0; i < spheres.size(); i++) {
+  for (int i = 0; i < spheres.size(); i++) { // Culls spheres outside the bounds of the tree
     Sphere& s = spheres[i];
-    if (s.pos.x > 1.0f) {
+    if (s.pos.x > (0.31f + float(radiusMax)/10)) {
       Sphere tempS = spheres[spheres.size() - 1];
       spheres[spheres.size() - 1] = spheres[i];
       spheres[i] = tempS;
       spheres.pop_back();
     }
   }
-
-  Rotationf rotworld(Vec3f(0, 1, 0), ToRadians(70.0f));
+  
+  Rotationf rotworld(Vec3f(0, 1, 0), ToRadians(float(spheresRotation)/10)); // Rotates effect about the Y-axis
+  spheresRotation = (spheresRotation + 2) % (360 * 10); // Rate of rotation
 
   for (auto li : led) {
     CRGB& pc = strip[li.index];
@@ -227,7 +234,7 @@ void loop_sphere() {
           minDist = dist;
           outsideSpheres = false;
           pc = s.color;
-          pc.nscale8(uint8_t(255 * pow(1.0 - dist / s.radius, 2.0f)));
+          pc.nscale8(uint8_t(255 * pow(1.0 - dist / s.radius, 1.5f)));
         }
       }
     }
