@@ -13,14 +13,15 @@
 #define NUM_LEDS_PER_STRIP 598
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
-#define PERIOD 250
-// #define FORCE_MODE 0
+// for mode dev
+// #define FORCE_MODE 4
 
 constexpr float k2pi = 2.0f * M_PI;
 
 int mode;
 int32_t countdown = -1;
 uint32_t showTime = 0;
+uint32_t newProgStartMs = 0;
 
 using namespace std;
 using namespace r3;
@@ -312,11 +313,12 @@ void clear(CRGB color) {
 }
 
 void perlin() {
+  uint32_t dt = (timestamp[idx[0]] - newProgStartMs);
   for (const auto& li : led) {
     CRGB& pc = strip[li.index];
-    Vec3f p = li.pos * 7;
-    float noise = abs(ImprovedNoise::noise(p.x - (iteration * 0.01f), p.y, p.z));
-    pc.setHSV(64, 255, uint8_t(noise * 255));
+    Vec3f p = li.pos * 4;
+    float noise = abs(ImprovedNoise::noise(p.x - (dt * 0.0003f), p.y, p.z));
+    pc.setHSV(uint8_t(noise * 255 + 96), 255, 32);
   }
 }
 
@@ -353,7 +355,7 @@ void drawFrameTimeLuke() {
     if (tenMs < maxPixels) {
       auto& pc = barpix(base + tenMs);
       pc = ((tenMs % 5) != 4) ? primary : secondary;
-      pc.nscale8( millis() % 10 <= remainder ? 10 : 0);
+      pc.nscale8(millis() % 10 <= remainder ? 10 : 0);
     }
   };
 
@@ -394,6 +396,7 @@ void loop() {
 #if defined(FORCE_MODE)
     mode = FORCE_MODE;
 #endif
+    newProgStartMs = timestamp[idx[0]];
   }
   switch (mode) {
     case 0:
