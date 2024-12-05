@@ -68,14 +68,8 @@ struct Sphere {
   Sphere(CRGB colorIn) {
     color = colorIn;
   }
-  void setPosXY(float offset = -0.5) {  // Set position of sphere along the XY plane of the tree
-    pos = Vec3f(float((rand() % 63) - 31) / 100.0f, float(rand() % 148) / 100.0f, offset);
-  }
-  void setPosYZ(float offset = -0.5) {  // Set position of sphere along the YZ plane of the tree
-    pos = Vec3f(offset, float(rand() % 148) / 100.0f, float((rand() % 63) - 31) / 100.0f);
-  }
-  void setPosXZ(float offset = -0.5) {  // Set position of sphere along the XZ plane of the tree
-    pos = Vec3f(float((rand() % 63) - 31) / 100.0f, offset, float((rand() % 63) - 31) / 100.0f);
+  void setPos(float offset = -1.35) {  // Set position of sphere along the XY plane of the cube
+    pos = Vec3f(float((rand() % 171) - 85) / 100.0f, float((rand() % 171) - 85) / 100.0f, offset);
   }
   void setRad(int upper, int lower) {  // Set radius of sphere in centemeters
     radius = float((rand() % (upper - lower + 1)) + lower) / 100.0f;
@@ -87,11 +81,18 @@ struct Sphere {
   void setCol(CRGB colorIn) {
     color = colorIn;
   }
-  float dist(const Vec3f& p) {
-    return (p - pos).Length();
+  void stepForward() {
+    pos.z += vel;
   }
-  bool isInside(const Vec3f& p) const {
-    return (p - pos).LengthSquared() < radiusSquared;
+  float dist(const Vec3f& p, Rotationf rot = Rotationf(Vec3f(0, 1, 0), ToRadians(0.0f))) {
+    Vec3f adjustedPos = rot.Rotate(pos);
+    adjustedPos.y += 0.85;
+    return (p - adjustedPos).Length();
+  }
+  bool isInside(const Vec3f& p, Rotationf rot = Rotationf(Vec3f(0, 1, 0), ToRadians(0.0f))) const {
+    Vec3f adjustedPos = rot.Rotate(pos);
+    adjustedPos.y += 0.85;
+    return (p - adjustedPos).LengthSquared() < radiusSquared;
   }
 };
 
@@ -105,6 +106,7 @@ uint32_t timestamp[3];
 int idx[3];
 uint32_t iteration = 0;
 int delayTime = 0;
+int stepTime = 0;
 
 vector<Sphere> spheres;
 float yrot = 0.0f;
@@ -178,7 +180,7 @@ T clamp(T val, T lo, T hi) {
   return max(min(val, hi), lo);
 }
 
-void luke_sphere() {
+void luke_sphere_test() {
   Sphere sphere = Sphere();
   sphere.pos = Vec3f(0.0, 0.5f * sin((iteration % 100) / 100.0 * k2pi) + 0.75, 0.0);
   sphere.radiusSquared = pow(0.25f, 2);
@@ -200,24 +202,23 @@ void setDelayTime(uint32_t ms, int max, int min) {
 
 void loop_sphere() {
   uint32_t ms = timestamp[idx[0]] = millis();
-  int radiusMax = 10;
   if (ms >= delayTime && spheres.size() < 50) {
     Sphere s = Sphere(randColor());
-    s.setPosYZ();
+    s.setPos();
     s.setVel(5, 15);
     s.setRad(3, 10);
     spheres.push_back(s);
     setDelayTime(ms, 333, 100);
   }
 
-  for (int i = 0; i < spheres.size(); i++) {  // Moves all the spheres
-    Sphere& s = spheres[i];
-    s.pos.x += s.vel;
+  if (stepTime <= ms) {
+    for (Sphere s : spheres) s.stepForward(); // Moves all the spheres
+    stepTime = ms + 25;
   }
 
   for (int i = 0; i < spheres.size(); i++) {  // Culls spheres outside the bounds of the tree
     Sphere& s = spheres[i];
-    if (s.pos.x > (0.31f + float(radiusMax) / 10)) {
+    if (s.pos.x > (1.70f + s.radius)) {
       Sphere tempS = spheres[spheres.size() - 1];
       spheres[spheres.size() - 1] = spheres[i];
       spheres[i] = tempS;
@@ -230,13 +231,12 @@ void loop_sphere() {
 
   for (auto li : led) {
     CRGB& pc = strip[li.index];
-    li.pos = rotworld.Rotate(li.pos);
     bool outsideSpheres = true;
     float minDist = 100000;
     for (int i = 0; i < spheres.size(); i++) {
       Sphere& s = spheres[i];
-      if (s.isInside(li.pos)) {
-        float dist = s.dist(li.pos);
+      if (s.isInside(li.pos, rotworld)) {
+        float dist = s.dist(li.pos, rotworld);
         if (dist < minDist) {
           minDist = dist;
           outsideSpheres = false;
@@ -245,9 +245,7 @@ void loop_sphere() {
         }
       }
     }
-    if (outsideSpheres) {
-      pc = CRGB::Black;
-    }
+    if (outsideSpheres) pc = CRGB::Black; // Clear non-intersecting LEDs
   }
 }
 
@@ -337,7 +335,7 @@ void drawFrameTime() {
 void drawFrameTimeLuke() {
   int dt = (timestamp[idx[0]] - timestamp[idx[1]]);  // Time between frames in ms
 
-  constexpr int beginBarPix = 598;  // Should be +598, but it breaks for some reason
+  constexpr int beginBarPix = 598;
   constexpr int endBarPix = 623;
   auto barpix = [](int i) -> CRGB& {
     return pix(i + beginBarPix);
@@ -418,7 +416,7 @@ void loop() {
       clear(CRGB::Red);
       break;
     case 6:
-      luke_sphere();
+      luke_sphere_test();
       break;
     default:
       break;
