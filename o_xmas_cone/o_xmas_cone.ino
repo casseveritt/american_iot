@@ -329,6 +329,23 @@ void drawFrameTime() {
   }
 }
 
+void drawFrameTimeLuke() {
+  int dt = (timestamp[idx[0]] - timestamp[idx[1]]); // Time between frames in ms
+  int tenMs = dt / 10; // Number of ms between frames in multiples of 10 rounded down
+  int remainder = dt % 10; // Remainder
+
+  for (int i = 0; i < min(10, tenMs); i++) {
+    auto& pc = pix(i + 11); // Should be +598, but it breaks for some reason
+    pc = ((i % 5) != 4) ? CRGB::Blue : CRGB::Green;
+    pc.nscale8(8);
+  }
+  for (int i = 0; i < min(10, remainder); i++) {
+    auto& pc = pix(i + 21);
+    pc = ((i % 5) != 4) ? CRGB::Yellow : CRGB::Red;
+    pc.nscale8(8);
+  }
+}
+
 void loop() {
   idx[0] = iteration % 3;
   idx[1] = (iteration + 2) % 3;
