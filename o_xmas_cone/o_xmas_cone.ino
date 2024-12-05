@@ -14,7 +14,10 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 #define PERIOD 250
-// #define FORCE_MODE 1
+// #define FORCE_MODE 0
+
+constexpr float k2pi = 2.0f * M_PI;
+
 int mode;
 int32_t countdown = -1;
 
@@ -137,7 +140,7 @@ void setup() {
     c.push_back(randColor());
   }
   for (int j = 0; j < 12; j++) {
-    float theta = (2.0f * M_PI * j) / 12.0f;
+    float theta = (k2pi * j) / 12.0f;
     Rotationf rot(Vec3f(0, 1, 0), -theta);
     float r_top = 0.04f;  // meters
     float r_bot = 0.31f;
@@ -175,7 +178,7 @@ T clamp(T val, T lo, T hi) {
 
 void luke_sphere() {
   Sphere sphere = Sphere();
-  sphere.pos = Vec3f(0.0, 0.5f * sin((iteration % 100) / 100.0 * 2 * M_PI) + 0.75, 0.0);
+  sphere.pos = Vec3f(0.0, 0.5f * sin((iteration % 100) / 100.0 * k2pi) + 0.75, 0.0);
   sphere.radiusSquared = pow(0.25f, 2);
 
   const Sphere s = sphere;
@@ -262,15 +265,12 @@ void rot_y() {
     pc = CRGB(max(0.0f, p.x), max(0.0f, p.y), max(0.0f, p.z));
   }
 
-  yrot += 2.0f * M_PI / 60.0f;
-  while (yrot > 2.0f * M_PI) {
-    yrot -= 2.0f * M_PI;
-  }
+  yrot = fmod(yrot + k2pi / 60.0f, k2pi);
 }
 
 void twist() {
   auto ms = timestamp[idx[0]];
-  float twistRadsPerMeter = 2.0 * M_PI * 2.5f * (sin((2.0f * M_PI * ms) / 12000.0f) + 1.0);
+  float twistRadsPerMeter = k2pi * 2.5f * (sin(fmod((k2pi * ms) / 12000.0f, k2pi) + 1.0));
 
   for (const auto& li : led) {
     Vec3f p = li.pos;
@@ -279,12 +279,12 @@ void twist() {
     pc = p.x > 0 ? CRGB::Blue : CRGB::Black;
     pc.nscale8(8);
   }
-  yrot += 2.0f * M_PI / 60.0f;
+  yrot += k2pi / 60.0f;
 }
 
 void screw() {
   auto ms = timestamp[idx[0]];
-  float twistRadsPerMeter = 2.0 * M_PI * 2.5f;  //(sin((2.0f * M_PI * ms) / 12000.0f) + 1.0);
+  float twistRadsPerMeter = k2pi * 2.5f;  //(sin((k2pi * ms) / 12000.0f) + 1.0);
 
   for (const auto& li : led) {
     Vec3f p = li.pos;
@@ -299,10 +299,7 @@ void screw() {
     pc = pc.lerp8(CRGB::Green, uint8_t(max(0.0f, ss * 255.0f)));
     pc.nscale8(8);
   }
-  yrot += 2.0f * M_PI / 45.0f;
-  while (yrot > (2.0f * M_PI)) {
-    yrot -= 2.0f * M_PI;
-  }
+  yrot = fmod(yrot + k2pi / 45.0f, k2pi);
 }
 
 void clear(CRGB color) {
