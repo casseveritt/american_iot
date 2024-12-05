@@ -62,20 +62,20 @@ struct Sphere {
   Sphere(CRGB colorIn) {
     color = colorIn;
   }
-  void setPosXY(float offset = -0.5) { // Set position of sphere along the XY plane of the tree
+  void setPosXY(float offset = -0.5) {  // Set position of sphere along the XY plane of the tree
     pos = Vec3f(float((rand() % 63) - 31) / 100.0f, float(rand() % 148) / 100.0f, offset);
   }
-  void setPosYZ(float offset = -0.5) { // Set position of sphere along the YZ plane of the tree
+  void setPosYZ(float offset = -0.5) {  // Set position of sphere along the YZ plane of the tree
     pos = Vec3f(offset, float(rand() % 148) / 100.0f, float((rand() % 63) - 31) / 100.0f);
   }
-  void setPosXZ(float offset = -0.5) { // Set position of sphere along the XZ plane of the tree
+  void setPosXZ(float offset = -0.5) {  // Set position of sphere along the XZ plane of the tree
     pos = Vec3f(float((rand() % 63) - 31) / 100.0f, offset, float((rand() % 63) - 31) / 100.0f);
   }
-  void setRad(int upper, int lower) { // Set radius of sphere in centemeters
+  void setRad(int upper, int lower) {  // Set radius of sphere in centemeters
     radius = float((rand() % (upper - lower + 1)) + lower) / 100.0f;
     radiusSquared = pow(radius, 2);
   }
-  void setVel(int min, int max) { // Set sphere velocity in thousandths of a meter per second
+  void setVel(int min, int max) {  // Set sphere velocity in thousandths of a meter per second
     vel = float((rand() % (max - min + 1)) + min) / 1000.0f;
   }
   void setCol(CRGB colorIn) {
@@ -204,23 +204,23 @@ void loop_sphere() {
     setDelayTime(ms, 333, 100);
   }
 
-  for (int i = 0; i < spheres.size(); i++) { // Moves all the spheres
+  for (int i = 0; i < spheres.size(); i++) {  // Moves all the spheres
     Sphere& s = spheres[i];
     s.pos.x += s.vel;
   }
 
-  for (int i = 0; i < spheres.size(); i++) { // Culls spheres outside the bounds of the tree
+  for (int i = 0; i < spheres.size(); i++) {  // Culls spheres outside the bounds of the tree
     Sphere& s = spheres[i];
-    if (s.pos.x > (0.31f + float(radiusMax)/10)) {
+    if (s.pos.x > (0.31f + float(radiusMax) / 10)) {
       Sphere tempS = spheres[spheres.size() - 1];
       spheres[spheres.size() - 1] = spheres[i];
       spheres[i] = tempS;
       spheres.pop_back();
     }
   }
-  
-  Rotationf rotworld(Vec3f(0, 1, 0), ToRadians(float(spheresRotation)/10)); // Rotates effect about the Y-axis
-  spheresRotation = (spheresRotation + 2) % (360 * 10); // Rate of rotation
+
+  Rotationf rotworld(Vec3f(0, 1, 0), ToRadians(float(spheresRotation) / 10));  // Rotates effect about the Y-axis
+  spheresRotation = (spheresRotation + 2) % (360 * 10);                        // Rate of rotation
 
   for (auto li : led) {
     CRGB& pc = strip[li.index];
@@ -331,16 +331,16 @@ void drawFrameTime() {
 }
 
 void drawFrameTimeLuke() {
-  int dt = (timestamp[idx[0]] - timestamp[idx[1]]); // Time between frames in ms
-  int tenMs = dt / 10; // Number of ms between frames in multiples of 10 rounded down
-  int remainder = dt % 10; // Remainder
+  int dt = (timestamp[idx[0]] - timestamp[idx[1]]);  // Time between frames in ms
+  int tenMs = dt / 10;                               // Number of ms between frames in multiples of 10 rounded down
+  int remainder = dt % 10;                           // Remainder
 
   for (int i = 0; i < 29; i++) {
-    auto& pc = pix(i + 598); // Should be +598, but it breaks for some reason
+    auto& pc = pix(i + 598);  // Should be +598, but it breaks for some reason
     pc = CRGB::Black;
   }
   for (int i = 0; i < min(10, tenMs); i++) {
-    auto& pc = pix(i + 598); // Should be +598, but it breaks for some reason
+    auto& pc = pix(i + 598);  // Should be +598, but it breaks for some reason
     pc = ((i % 5) != 4) ? CRGB::Blue : CRGB::Green;
     pc.nscale8(4);
   }
@@ -349,7 +349,6 @@ void drawFrameTimeLuke() {
     pc = ((i % 5) != 4) ? CRGB::Yellow : CRGB::Red;
     pc.nscale8(4);
   }
-
 }
 
 void loop() {
@@ -359,7 +358,7 @@ void loop() {
   uint32_t ms = timestamp[idx[0]] = millis();
   int dt = ms - timestamp[idx[1]];
   countdown -= dt;
-  const int modeSwapTime = 300 * 1000; // Time to change modes in seconds
+  const int modeSwapTime = 300 * 1000;  // Time to change modes in seconds
 
   if (countdown < 0) {
     countdown = modeSwapTime;
