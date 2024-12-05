@@ -14,7 +14,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 // for mode dev
-// #define FORCE_MODE 4
+#define FORCE_MODE 4
 
 constexpr float k2pi = 2.0f * M_PI;
 
@@ -320,6 +320,21 @@ void perlin() {
   }
 }
 
+void perlin_flashing() {
+  uint32_t dt = (timestamp[idx[0]] - newProgStartMs);
+  uint32_t approxIteration = (dt * 255) / 1000;
+  for (const auto& li : led) {
+    CRGB& pc = strip[li.index];
+    Vec3f p = li.pos * 7;
+    float noise = abs(ImprovedNoise::noise(p.x - (approxIteration * 0.01f), p.y, p.z));
+    float noise2 = abs(ImprovedNoise::noise(p.x - ((approxIteration - 1) * 0.01f), p.y, p.z));
+    noise -= noise2;
+    noise = abs(noise) - 0.2f;
+    noise = clamp(noise, 0.0f, 1.0f);
+    pc.setHSV(64, 255, uint8_t(noise * 255));
+  }
+}
+
 void drawFrameTime() {
   int dt = (timestamp[idx[0]] - timestamp[idx[1]]) / 2;
 
@@ -410,7 +425,7 @@ void loop() {
       loop_sphere();
       break;
     case 4:
-      perlin();
+      perlin_flashing();
       break;
     case 5:
       clear(CRGB::Red);
