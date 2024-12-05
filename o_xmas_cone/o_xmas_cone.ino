@@ -14,6 +14,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 #define PERIOD 250
+// #define FORCE_MODE 1
 int mode;
 int32_t countdown = -1;
 
@@ -253,8 +254,8 @@ void rot_y() {
     p.y = 0;
     p.Normalize();
     p = Rotationf(Vec3f(0, 1, 0), yrot).Rotate(p);
-    p.x = pow(p.x, 5.0f);
-    p.z = pow(p.z, 5.0f);
+    p.x *= p.x * p.x * p.x * p.x; // pow(p.x, 5.0f);
+    p.z *= p.z * p.z * p.z * p.z; // pow(p.z, 5.0f);
 
     p *= 25;
     CRGB& pc = strip[li.index];
@@ -262,6 +263,9 @@ void rot_y() {
   }
 
   yrot += 2.0f * M_PI / 60.0f;
+  while (yrot > 2.0f * M_PI) {
+    yrot -= 2.0f * M_PI;
+  }
 }
 
 void twist() {
@@ -363,7 +367,12 @@ void loop() {
   if (countdown < 0) {
     countdown = modeSwapTime;
     int current = mode;
-    while (mode == current) mode = rand() % 5;
+    while (mode == current) {
+      mode = rand() % 5;
+    }
+#if defined(FORCE_MODE)
+    mode = FORCE_MODE;
+#endif
   }
   switch (mode) {
     case 0:
