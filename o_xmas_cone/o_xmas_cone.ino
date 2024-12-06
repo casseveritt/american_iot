@@ -14,7 +14,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 // for mode dev
-// #define FORCE_MODE 4
+// #define FORCE_MODE 3
 
 constexpr float k2pi = 2.0f * M_PI;
 
@@ -300,6 +300,7 @@ void rot_y() {
 
 void twist() {
   auto ms = timestamp[idx[0]];
+  
   float twistRadsPerMeter = k2pi * 2.5f * (sin(fmod((k2pi * ms) / 12000.0f, k2pi) + 1.0));
 
   for (const auto& li : led) {
@@ -309,7 +310,7 @@ void twist() {
     pc = p.x > 0 ? CRGB::Blue : CRGB::Black;
     pc.nscale8(8);
   }
-  yrot += k2pi / 60.0f;
+  yrot = fmod(yrot + k2pi / 60.0f, k2pi);
 }
 
 void screw() {
@@ -445,7 +446,7 @@ void loop() {
   if (countdown < 0) {
     countdown = modeSwapTime;
     int current = mode;
-    while (mode == current) {
+    while (mode == current || mode == 3) {
       mode = rand() % 5;
     }
 #if defined(FORCE_MODE)
