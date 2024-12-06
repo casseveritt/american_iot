@@ -69,7 +69,7 @@ struct Sphere {
     color = colorIn;
   }
   void setPos(float offset = -1.35) {  // Set position of sphere along the XY plane of the cube
-    pos = Vec3f(float((rand() % 171) - 85) / 100.0f, float((rand() % 171) - 85) / 100.0f, offset);
+    pos = Vec3f(float((rand() % 63) - 31) / 100.0f, float(rand() % 141) / 100.0f, offset);
   }
   void setRad(int upper, int lower) {  // Set radius of sphere in centemeters
     radius = float((rand() % (upper - lower + 1)) + lower) / 100.0f;
@@ -81,18 +81,14 @@ struct Sphere {
   void setCol(CRGB colorIn) {
     color = colorIn;
   }
-  void stepForward() {
-    pos.z += vel;
+  void stepForward(int frameTime) {
+    pos.z += vel * (frameTime / 25);
   }
-  float dist(const Vec3f& p, Rotationf rot = Rotationf(Vec3f(0, 1, 0), ToRadians(0.0f))) {
-    Vec3f adjustedPos = rot.Rotate(pos);
-    adjustedPos.y += 0.85;
-    return (p - adjustedPos).Length();
+  float dist(const Vec3f& p) {
+    return (p - pos).Length();
   }
-  bool isInside(const Vec3f& p, Rotationf rot = Rotationf(Vec3f(0, 1, 0), ToRadians(0.0f))) const {
-    Vec3f adjustedPos = rot.Rotate(pos);
-    adjustedPos.y += 0.85;
-    return (p - adjustedPos).LengthSquared() < radiusSquared;
+  bool isInside(const Vec3f& p) const {
+    return (p - pos).LengthSquared() < radiusSquared;
   }
 };
 
@@ -106,7 +102,7 @@ uint32_t timestamp[3];
 int idx[3];
 uint32_t iteration = 0;
 int delayTime = 0;
-int stepTime = 0;
+int startTime = 0;
 
 vector<Sphere> spheres;
 float yrot = 0.0f;
@@ -238,17 +234,19 @@ void loop_sphere() {
     s.setVel(5, 15);
     s.setRad(3, 10);
     spheres.push_back(s);
-    setDelayTime(ms, 333, 100);
+    setDelayTime(ms, 333, 200);
   }
 
-  if (stepTime <= ms) {
-    for (Sphere s : spheres) s.stepForward();  // Moves all the spheres
-    stepTime = ms + 25;
+  int timeTaken = ms - startTime;
+  for (int i = 0; i < spheres.size(); i++) { // Moves all the spheres
+    Sphere& s = spheres[i];
+    s.stepForward(timeTaken);
   }
+  startTime = ms;
 
   for (int i = 0; i < spheres.size(); i++) {  // Culls spheres outside the bounds of the tree
     Sphere& s = spheres[i];
-    if (s.pos.x > (1.70f + s.radius)) {
+    if (s.pos.z > (0.31f + s.radius)) {
       Sphere tempS = spheres[spheres.size() - 1];
       spheres[spheres.size() - 1] = spheres[i];
       spheres[i] = tempS;
@@ -263,10 +261,11 @@ void loop_sphere() {
     CRGB& pc = strip[li.index];
     bool outsideSpheres = true;
     float minDist = 100000;
+    li.pos = rotworld.Rotate(li.pos);
     for (int i = 0; i < spheres.size(); i++) {
       Sphere& s = spheres[i];
-      if (s.isInside(li.pos, rotworld)) {
-        float dist = s.dist(li.pos, rotworld);
+      if (s.isInside(li.pos)) {
+        float dist = s.dist(li.pos);
         if (dist < minDist) {
           minDist = dist;
           outsideSpheres = false;
