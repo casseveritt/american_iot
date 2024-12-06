@@ -14,7 +14,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 // for mode dev
-// #define FORCE_MODE 7
+// #define FORCE_MODE 4
 
 constexpr float k2pi = 2.0f * M_PI;
 
@@ -124,24 +124,54 @@ CRGB& pix(int index) {
   return strip[pixaddr(index)];
 }
 
-deque<CRGB> c;
-
-CRGB randColor() {
+static CRGB randColor() {
   CRGB c;
   c.setHSV(rand() & 255, (rand() & 63) + 191, (rand() & 127) + 128);
   return c;
 }
+
+struct ColorMap {
+
+  ColorMap() {}
+
+  void clear() {
+    cm.clear();
+  }
+
+  void addColor(CRGB c, uint8_t scale = 255) {
+    cm.push_back(c.scale8(scale));
+  }
+
+  CRGB lookup(float t) const {
+    t = clamp(t, 0.0f, 0.999f);
+    const float ts = t * cm.size();
+    const int ti = ts;
+    const float tfr = ts - ti;
+    return cm[ti].lerp8(cm[ti + 1], uint8_t(255 * tfr));
+  }
+
+  vector<CRGB> cm;
+};
+
+ColorMap cm1;
 
 void setup() {
 
   FastLED.addLeds<WS2812, LED0_PIN, GRB>(strip, NUM_LEDS_PER_STRIP);
   FastLED.addLeds<WS2812, LED1_PIN, GRB>(strip + NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
   FastLED.setBrightness(255);
+  cm1.addColor(CRGB::Maroon, 32);
+  cm1.addColor(CRGB::Maroon, 32);
+  cm1.addColor(CRGB::Maroon, 8);
+  cm1.addColor(CRGB::Grey, 8);
+  cm1.addColor(CRGB::Maroon, 8);
+  cm1.addColor(CRGB::Maroon, 32);
+  cm1.addColor(CRGB::Grey, 8);
+  cm1.addColor(CRGB::Grey);
+  cm1.addColor(CRGB::Maroon, 8);
+
   for (int i = 0; i < NUM_LEDS; i++) {
     strip[i] = CRGB::Black;
-  }
-  for (int i = 0; i < 102; i++) {
-    c.push_back(randColor());
   }
   for (int j = 0; j < 12; j++) {
     float theta = (k2pi * j) / 12.0f;
@@ -212,7 +242,7 @@ void loop_sphere() {
   }
 
   if (stepTime <= ms) {
-    for (Sphere s : spheres) s.stepForward(); // Moves all the spheres
+    for (Sphere s : spheres) s.stepForward();  // Moves all the spheres
     stepTime = ms + 25;
   }
 
@@ -245,7 +275,7 @@ void loop_sphere() {
         }
       }
     }
-    if (outsideSpheres) pc = CRGB::Black; // Clear non-intersecting LEDs
+    if (outsideSpheres) pc = CRGB::Black;  // Clear non-intersecting LEDs
   }
 }
 
@@ -312,11 +342,13 @@ void clear(CRGB color) {
 
 void perlin() {
   uint32_t dt = (timestamp[idx[0]] - newProgStartMs);
+  Quaternionf q(Vec3f(0, 1, 0), ToRadians(21.0f));
   for (const auto& li : led) {
     CRGB& pc = strip[li.index];
-    Vec3f p = li.pos * 4;
+    Vec3f p = q.Rotate(li.pos * 4);
+    p.y *= 2.0f;
     float noise = abs(ImprovedNoise::noise(p.x - (dt * 0.0003f), p.y, p.z));
-    pc.setHSV(uint8_t(noise * 255 + 96), 255, 32);
+    pc = cm1.lookup(noise);
   }
 }
 
