@@ -14,7 +14,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 // for mode dev
-// #define FORCE_MODE 3
+// #define FORCE_MODE 2
 
 constexpr float k2pi = 2.0f * M_PI;
 
@@ -143,19 +143,21 @@ struct ColorMap {
     const float ts = t * cm.size();
     const int ti = ts;
     const float tfr = ts - ti;
-    return cm[ti].lerp8(cm[ti + 1], uint8_t(255 * tfr));
+    return cm[ti].lerp8(cm[(ti + 1)%cm.size()], uint8_t(255 * tfr));
   }
 
   vector<CRGB> cm;
 };
 
 ColorMap cm1;
+ColorMap rgMap;
 
 void setup() {
 
   FastLED.addLeds<WS2812, LED0_PIN, GRB>(strip, NUM_LEDS_PER_STRIP);
   FastLED.addLeds<WS2812, LED1_PIN, GRB>(strip + NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
   FastLED.setBrightness(255);
+ 
   cm1.addColor(CRGB::Maroon, 32);
   cm1.addColor(CRGB::Maroon, 32);
   cm1.addColor(CRGB::Maroon, 8);
@@ -165,6 +167,22 @@ void setup() {
   cm1.addColor(CRGB::Grey, 8);
   cm1.addColor(CRGB::Grey);
   cm1.addColor(CRGB::Maroon, 8);
+
+  rgMap.addColor(CRGB::Red, 8);
+  rgMap.addColor(CRGB::Red, 8);
+  rgMap.addColor(CRGB::Red, 8);
+  rgMap.addColor(CRGB::Red, 64);
+  rgMap.addColor(CRGB::Red, 8);
+  rgMap.addColor(CRGB::Red, 8);
+  rgMap.addColor(CRGB::Red, 8);
+
+  rgMap.addColor(CRGB::Green, 8);
+  rgMap.addColor(CRGB::Green, 8);
+  rgMap.addColor(CRGB::Green, 8);
+  rgMap.addColor(CRGB::Green, 64);
+  rgMap.addColor(CRGB::Green, 8);
+  rgMap.addColor(CRGB::Green, 8);
+  rgMap.addColor(CRGB::Green, 8);
 
   for (int i = 0; i < NUM_LEDS; i++) {
     strip[i] = CRGB::Black;
@@ -322,12 +340,9 @@ void screw() {
     p = Rotationf(Vec3f(0, 1, 0), -twistRadsPerMeter * y + yrot).Rotate(p);
     p.y = 0;
     p.Normalize();
+    float x = atan2(p.x, p.z) / k2pi + 0.5f;
     CRGB& pc = strip[li.index];
-    pc = CRGB::Red;
-    float x = p.x * 0.5f + 0.5f;
-    float ss = x * x * x * (x * (6.0f * x - 15.0f) + 10.0f);
-    pc = pc.lerp8(CRGB::Green, uint8_t(max(0.0f, ss * 255.0f)));
-    pc.nscale8(8);
+    pc = rgMap.lookup(x);
   }
   yrot = fmod(yrot + k2pi / 45.0f, k2pi);
 }
