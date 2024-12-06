@@ -299,7 +299,7 @@ void rot_y() {
 
 void twist() {
   auto ms = timestamp[idx[0]];
-  
+
   float twistRadsPerMeter = k2pi * 2.5f * (sin(fmod((k2pi * ms) / 12000.0f, k2pi) + 1.0));
 
   for (const auto& li : led) {
@@ -445,7 +445,7 @@ void loop() {
   if (countdown < 0) {
     countdown = modeSwapTime;
     int current = mode;
-    while (mode == current || mode == 3) {
+    while (mode == current) {
       mode = rand() % 5;
     }
 #if defined(FORCE_MODE)
