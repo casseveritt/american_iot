@@ -14,7 +14,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 // for mode dev
-#define FORCE_MODE 4
+// #define FORCE_MODE 7
 
 constexpr float k2pi = 2.0f * M_PI;
 
@@ -322,16 +322,26 @@ void perlin() {
 
 void perlin_flashing() {
   uint32_t dt = (timestamp[idx[0]] - newProgStartMs);
-  uint32_t approxIteration = (dt * 255) / 1000;
+  static uint32_t trappedCondition = 0;
+  uint32_t approxIteration = trappedCondition > 0 ? trappedCondition : (dt * 255) / 1000;
+  int bigDeltas = 0;
+  Quaternionf q(Vec3f(0, 1, 0), ToRadians(0.01f));
   for (const auto& li : led) {
     CRGB& pc = strip[li.index];
     Vec3f p = li.pos * 7;
-    float noise = abs(ImprovedNoise::noise(p.x - (approxIteration * 0.01f), p.y, p.z));
-    float noise2 = abs(ImprovedNoise::noise(p.x - ((approxIteration - 1) * 0.01f), p.y, p.z));
-    noise -= noise2;
-    noise = abs(noise) - 0.2f;
-    noise = clamp(noise, 0.0f, 1.0f);
-    pc.setHSV(64, 255, uint8_t(noise * 255));
+    p = q.Rotate(p);
+    float noise = abs(ImprovedNoise::noise(p.x, p.y, p.z - approxIteration * 0.01f));
+    float noise2 = abs(ImprovedNoise::noise(p.x, p.y, p.z - (approxIteration - 1) * 0.01f));
+    float noise3 = noise - noise2;
+    noise3 = abs(noise3) - 0.2f;
+    noise3 = clamp(noise3, 0.0f, 1.0f);
+    if (noise3 > 0) {
+      bigDeltas++;
+    }
+    pc.setHSV(64, 255, uint8_t((trappedCondition ? noise3 : noise) * 255));
+  }
+  if (bigDeltas > 15) {
+    trappedCondition = approxIteration;
   }
 }
 
@@ -425,13 +435,16 @@ void loop() {
       loop_sphere();
       break;
     case 4:
-      perlin_flashing();
+      perlin();
       break;
     case 5:
       clear(CRGB::Red);
       break;
     case 6:
       luke_sphere_test();
+      break;
+    case 7:
+      perlin_flashing();
       break;
     default:
       break;
