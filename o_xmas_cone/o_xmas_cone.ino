@@ -14,7 +14,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 // for mode dev
-// #define FORCE_MODE 4
+// #define FORCE_MODE 1
 
 constexpr float k2pi = 2.0f * M_PI;
 
@@ -177,6 +177,7 @@ struct ColorMap {
 
 ColorMap cm1;
 ColorMap rgMap;
+ColorMap blueBlack;
 
 void setup() {
 
@@ -211,6 +212,13 @@ void setup() {
   rgMap.addColor(CRGB::Green, 8);
   rgMap.addColor(CRGB::Green, 8);
   rgMap.addColor(CRGB::Green, 8);
+
+  blueBlack.addColor(CRGB::Blue, 16);
+  blueBlack.addColor(CRGB::Blue, 16);
+  blueBlack.addColor(CRGB::Cyan, 64);
+  blueBlack.addColor(CRGB::Black);
+  blueBlack.addColor(CRGB::Black);
+  blueBlack.addColor(CRGB::Black);
 
   for (int i = 0; i < NUM_LEDS; i++) {
     strip[i] = CRGB::Black;
@@ -334,14 +342,15 @@ void twist() {
 
   float twistRadsPerMeter = k2pi * 2.5f * (sin(fmod((k2pi * ms) / 12000.0f, k2pi) + 1.0));
 
+  constexpr float baseRadsPerMSec = (k2pi * ToRadians(3.0f) * 50.0f) / 1000.0f; 
+
   for (const auto& li : led) {
     Vec3f p = li.pos;
-    p = Rotationf(Vec3f(0, 1, 0), -twistRadsPerMeter * p.y + yrot).Rotate(p);
+    p = Rotationf(Vec3f(0, 1, 0), -twistRadsPerMeter * p.y + fmod(baseRadsPerMSec * ms, k2pi)).Rotate(p);
     CRGB& pc = strip[li.index];
-    pc = p.x > 0 ? CRGB::Blue : CRGB::Black;
-    pc.nscale8(8);
+    float theta = atan2(p.x, p.z) / k2pi + 0.5f;
+    pc = blueBlack.lookup(theta);
   }
-  yrot = fmod(yrot + k2pi / 60.0f, k2pi);
 }
 
 void screw() {

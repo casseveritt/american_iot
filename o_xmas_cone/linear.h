@@ -79,12 +79,12 @@ inline T LessThan(T a, T b) {
 }
 
 template <typename T>
-inline T ToDegrees(T radians) {
+inline constexpr T ToDegrees(T radians) {
   return radians * T(R3_RAD_TO_DEG);
 }
 
 template <typename T>
-inline T ToRadians(T degrees) {
+inline constexpr T ToRadians(T degrees) {
   return degrees * T(R3_DEG_TO_RAD);
 }
 
