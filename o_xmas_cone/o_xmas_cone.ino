@@ -98,11 +98,37 @@ const CRGB colors[] = { CRGB::Red, CRGB::Green, CRGB::Blue, CRGB::Orange, CRGB::
 
 CRGB strip[NUM_LEDS];
 
-uint32_t timestamp[3];
-int idx[3];
-uint32_t iteration = 0;
 int delayTime = 0;
 int startTime = 0;
+
+struct FrameTime {
+
+  void update() {
+    idx[0] = iteration % 3;
+    idx[1] = (iteration + 2) % 3;
+    idx[2] = (iteration + 1) % 3;
+    timestamp[idx[0]] = millis();
+    iteration++;
+  }
+
+  uint32_t t0() const {
+    return timestamp[idx[0]];
+  }
+
+  uint32_t t1() const {
+    return timestamp[idx[1]];
+  }
+
+  uint32_t dt() const {
+    return t0() - t1();
+  }
+
+  uint32_t timestamp[3];
+  int idx[3];
+  uint32_t iteration = 0;
+};
+
+FrameTime frameTime;
 
 vector<Sphere> spheres;
 float yrot = 0.0f;
@@ -143,7 +169,7 @@ struct ColorMap {
     const float ts = t * cm.size();
     const int ti = ts;
     const float tfr = ts - ti;
-    return cm[ti].lerp8(cm[(ti + 1)%cm.size()], uint8_t(255 * tfr));
+    return cm[ti].lerp8(cm[(ti + 1) % cm.size()], uint8_t(255 * tfr));
   }
 
   vector<CRGB> cm;
@@ -157,7 +183,7 @@ void setup() {
   FastLED.addLeds<WS2812, LED0_PIN, GRB>(strip, NUM_LEDS_PER_STRIP);
   FastLED.addLeds<WS2812, LED1_PIN, GRB>(strip + NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
   FastLED.setBrightness(255);
- 
+
   cm1.addColor(CRGB::Maroon, 32);
   cm1.addColor(CRGB::Maroon, 32);
   cm1.addColor(CRGB::Maroon, 8);
@@ -224,28 +250,14 @@ T clamp(T val, T lo, T hi) {
   return max(min(val, hi), lo);
 }
 
-void luke_sphere_test() {
-  Sphere sphere = Sphere();
-  sphere.pos = Vec3f(0.0, 0.5f * sin((iteration % 100) / 100.0 * k2pi) + 0.75, 0.0);
-  sphere.radiusSquared = pow(0.25f, 2);
-
-  const Sphere s = sphere;
-
-  for (const auto& li : led) {
-    CRGB& pc = strip[li.index];
-    bool inside = s.isInside(li.pos);
-    pc = inside ? CRGB::Red : CRGB::Black;
-    pc.nscale8(8);
-  }
-}
-
 int spheresRotation = 1100;
+
 void setDelayTime(uint32_t ms, int max, int min) {
   delayTime = int(ms) + ((rand() % (max - min + 1)) + min);
 }
 
 void loop_sphere() {
-  uint32_t ms = timestamp[idx[0]] = millis();
+  uint32_t ms = frameTime.t0();
   if (ms >= delayTime && spheres.size() < 50) {
     Sphere s = Sphere(randColor());
     s.setPos();
@@ -256,7 +268,7 @@ void loop_sphere() {
   }
 
   int timeTaken = ms - startTime;
-  for (int i = 0; i < spheres.size(); i++) { // Moves all the spheres
+  for (int i = 0; i < spheres.size(); i++) {  // Moves all the spheres
     Sphere& s = spheres[i];
     s.stepForward(timeTaken);
   }
@@ -316,7 +328,7 @@ void rot_y() {
 }
 
 void twist() {
-  auto ms = timestamp[idx[0]];
+  auto ms = frameTime.t0();
 
   float twistRadsPerMeter = k2pi * 2.5f * (sin(fmod((k2pi * ms) / 12000.0f, k2pi) + 1.0));
 
@@ -331,7 +343,7 @@ void twist() {
 }
 
 void screw() {
-  auto ms = timestamp[idx[0]];
+  auto ms = frameTime.t0();
   float twistRadsPerMeter = k2pi * 2.5f;  //(sin((k2pi * ms) / 12000.0f) + 1.0);
 
   for (const auto& li : led) {
@@ -356,7 +368,7 @@ void clear(CRGB color) {
 }
 
 void perlin() {
-  uint32_t dt = (timestamp[idx[0]] - newProgStartMs);
+  uint32_t dt = (frameTime.t0() - newProgStartMs);
   Quaternionf q(Vec3f(0, 1, 0), ToRadians(21.0f));
   for (const auto& li : led) {
     CRGB& pc = strip[li.index];
@@ -368,7 +380,7 @@ void perlin() {
 }
 
 void perlin_flashing() {
-  uint32_t dt = (timestamp[idx[0]] - newProgStartMs);
+  uint32_t dt = (frameTime.t0() - newProgStartMs);
   static uint32_t trappedCondition = 0;
   uint32_t approxIteration = trappedCondition > 0 ? trappedCondition : (dt * 255) / 1000;
   int bigDeltas = 0;
@@ -393,19 +405,7 @@ void perlin_flashing() {
 }
 
 void drawFrameTime() {
-  int dt = (timestamp[idx[0]] - timestamp[idx[1]]) / 2;
-
-  auto seg = segment[0];
-  int incr = seg.first < seg.second ? 1 : -1;
-  for (int i = 0; i < min(50, dt); i++) {
-    auto& pc = pix(seg.first + i * incr);
-    pc = ((i % 5) != 0) ? CRGB::BlueViolet : CRGB::Orange;
-    pc.nscale8(8);
-  }
-}
-
-void drawFrameTimeLuke() {
-  int dt = (timestamp[idx[0]] - timestamp[idx[1]]);  // Time between frames in ms
+  int dt = frameTime.dt();  // Time between frames in ms
 
   constexpr int beginBarPix = 598;
   constexpr int endBarPix = 623;
@@ -449,12 +449,8 @@ void drawFrameTimeLuke() {
 }
 
 void loop() {
-  idx[0] = iteration % 3;
-  idx[1] = (iteration + 2) % 3;
-  idx[2] = (iteration + 1) % 3;
-  uint32_t ms = timestamp[idx[0]] = millis();
-  int dt = ms - timestamp[idx[1]];
-  countdown -= dt;
+  frameTime.update();
+  countdown -= frameTime.dt();
   const int modeSwapTime = 300 * 1000;  // Time to change modes in seconds
 
   if (countdown < 0) {
@@ -466,7 +462,7 @@ void loop() {
 #if defined(FORCE_MODE)
     mode = FORCE_MODE;
 #endif
-    newProgStartMs = timestamp[idx[0]];
+    newProgStartMs = frameTime.t0();
   }
   switch (mode) {
     case 0:
@@ -487,9 +483,6 @@ void loop() {
     case 5:
       clear(CRGB::Red);
       break;
-    case 6:
-      luke_sphere_test();
-      break;
     case 7:
       perlin_flashing();
       break;
@@ -497,10 +490,9 @@ void loop() {
       break;
   }
 
-  drawFrameTimeLuke();
+  drawFrameTime();
 
   const uint32_t beforeShow = millis();
   FastLED.show();
   showTime = millis() - beforeShow;
-  iteration++;
 }
