@@ -14,7 +14,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 // for mode dev
-// #define FORCE_MODE 1
+// #define FORCE_MODE 3
 
 constexpr float k2pi = 2.0f * M_PI;
 
@@ -267,23 +267,23 @@ void setDelayTime(uint32_t ms, int max, int min) {
 }
 
 void loop_sphere() {
-  uint32_t ms = frameTime.t0();
+  int ms = frameTime.t0();
+  int timeTaken = ms - startTime;
+  startTime = ms;
   if (ms >= delayTime && spheres.size() < 50) {
     Sphere s = Sphere(randColor());
     s.setPos();
-    s.setVel(5, 15);
+    s.setVel(5, 10);
     s.setRad(3, 10);
     spheres.push_back(s);
     setDelayTime(ms, 333, 200);
   }
-
-  int timeTaken = ms - startTime;
-  for (int i = 0; i < spheres.size(); i++) {  // Moves all the spheres
+  
+  for (int i = 0; i < spheres.size(); i++) { // Moves all the spheres
     Sphere& s = spheres[i];
     s.stepForward(timeTaken);
   }
-  startTime = ms;
-
+  
   for (int i = 0; i < spheres.size(); i++) {  // Culls spheres outside the bounds of the tree
     Sphere& s = spheres[i];
     if (s.pos.z > (0.31f + s.radius)) {
@@ -295,7 +295,7 @@ void loop_sphere() {
   }
 
   Rotationf rotworld(Vec3f(0, 1, 0), ToRadians(float(spheresRotation) / 10));  // Rotates effect about the Y-axis
-  spheresRotation = (spheresRotation + 2) % (360 * 10);                        // Rate of rotation
+  spheresRotation = (spheresRotation + (timeTaken / 10)) % (360 * 10);     // Rate of rotation
 
   for (auto li : led) {
     CRGB& pc = strip[li.index];
@@ -304,13 +304,17 @@ void loop_sphere() {
     li.pos = rotworld.Rotate(li.pos);
     for (int i = 0; i < spheres.size(); i++) {
       Sphere& s = spheres[i];
-      if (s.isInside(li.pos)) {
-        float dist = s.dist(li.pos);
-        if (dist < minDist) {
-          minDist = dist;
-          outsideSpheres = false;
-          pc = s.color;
-          pc.nscale8(uint8_t(255 * pow(1.0 - dist / s.radius, 1.5f)));
+      float lightDistX = abs(s.pos.x - li.pos.x);
+      float lightDistY = abs(s.pos.y - li.pos.y);
+      if (lightDistX <= s.radius && lightDistY <= s.radius) {
+        if (s.isInside(li.pos)) {
+          float dist = s.dist(li.pos);
+          if (dist < minDist) {
+            minDist = dist;
+            outsideSpheres = false;
+            pc = s.color;
+            pc.nscale8(uint8_t(255 * pow(1.0 - dist / s.radius, 1.5f)));
+          }
         }
       }
     }
