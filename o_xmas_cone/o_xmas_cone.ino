@@ -14,7 +14,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 // for mode dev
-// #define FORCE_MODE 2
+// #define FORCE_MODE 4
 
 constexpr float k2pi = 2.0f * M_PI;
 
@@ -191,7 +191,9 @@ void setup() {
   cm1.addColor(CRGB::Maroon, 8);
   cm1.addColor(CRGB::Maroon, 32);
   cm1.addColor(CRGB::Grey, 8);
-  cm1.addColor(CRGB::Grey);
+  cm1.addColor(CRGB::Black);
+  cm1.addColor(CRGB::White, 64);
+  cm1.addColor(CRGB::Black);
   cm1.addColor(CRGB::Maroon, 8);
 
   rgMap.addColor(CRGB::Red, 8);
@@ -372,9 +374,9 @@ void perlin() {
   Quaternionf q(Vec3f(0, 1, 0), ToRadians(21.0f));
   for (const auto& li : led) {
     CRGB& pc = strip[li.index];
-    Vec3f p = q.Rotate(li.pos * 4);
+    Vec3f p = q.Rotate(li.pos * 7);
     p.y *= 2.0f;
-    float noise = abs(ImprovedNoise::noise(p.x - (dt * 0.0003f), p.y, p.z));
+    float noise = 0.5f + 0.5f * ImprovedNoise::noise(p.x - (dt * 0.0003f), p.y, p.z);
     pc = cm1.lookup(noise);
   }
 }
