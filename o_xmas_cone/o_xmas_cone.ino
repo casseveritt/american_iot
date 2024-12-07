@@ -14,7 +14,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 // for mode dev
-// #define FORCE_MODE 3
+// #define FORCE_MODE 2
 
 constexpr float k2pi = 2.0f * M_PI;
 
@@ -131,7 +131,6 @@ struct FrameTime {
 FrameTime frameTime;
 
 vector<Sphere> spheres;
-float yrot = 0.0f;
 
 int pixaddr(int index) {
   if (index >= NUM_LEDS_PER_STRIP) {
@@ -323,13 +322,20 @@ void loop_sphere() {
 }
 
 void rot_y() {
-  Vec3f center(0, 0.75f, 0);
+  const Vec3f center(0, 0.75f, 0);
+
+  const auto ms = frameTime.t0();
+  constexpr float revPerSec = 1.0f;
+  constexpr float secPerMsec = 0.001f;
+  constexpr float baseRadsPerMsec = k2pi * revPerSec * secPerMsec; 
+  const float baseRads = fmod(baseRadsPerMsec * ms, k2pi);
+
 
   for (const auto& li : led) {
     Vec3f p = li.pos - center;
     p.y = 0;
     p.Normalize();
-    p = Rotationf(Vec3f(0, 1, 0), yrot).Rotate(p);
+    p = Rotationf(Vec3f(0, 1, 0), baseRads).Rotate(p);
     p.x *= p.x * p.x * p.x * p.x;  // pow(p.x, 5.0f);
     p.z *= p.z * p.z * p.z * p.z;  // pow(p.z, 5.0f);
 
@@ -337,8 +343,6 @@ void rot_y() {
     CRGB& pc = strip[li.index];
     pc = CRGB(max(0.0f, p.x), max(0.0f, p.y), max(0.0f, p.z));
   }
-
-  yrot = fmod(yrot + k2pi / 60.0f, k2pi);
 }
 
 void twist() {
@@ -346,11 +350,14 @@ void twist() {
 
   float twistRadsPerMeter = k2pi * 2.5f * (sin(fmod((k2pi * ms) / 12000.0f, k2pi) + 1.0));
 
-  constexpr float baseRadsPerMSec = (k2pi * ToRadians(3.0f) * 50.0f) / 1000.0f; 
+  constexpr float revPerSec = 1.0f;
+  constexpr float secPerMsec = 0.001f;
+  constexpr float baseRadsPerMsec = k2pi * revPerSec * secPerMsec; 
+  const float baseRads = fmod(baseRadsPerMsec * ms, k2pi);
 
   for (const auto& li : led) {
     Vec3f p = li.pos;
-    p = Rotationf(Vec3f(0, 1, 0), -twistRadsPerMeter * p.y + fmod(baseRadsPerMSec * ms, k2pi)).Rotate(p);
+    p = Rotationf(Vec3f(0, 1, 0), -twistRadsPerMeter * p.y + baseRads).Rotate(p);
     CRGB& pc = strip[li.index];
     float theta = atan2(p.x, p.z) / k2pi + 0.5f;
     pc = blueBlack.lookup(theta);
@@ -361,17 +368,22 @@ void screw() {
   auto ms = frameTime.t0();
   float twistRadsPerMeter = k2pi * 2.5f;  //(sin((k2pi * ms) / 12000.0f) + 1.0);
 
+  constexpr float revPerSec = 1.0f;
+  constexpr float secPerMsec = 0.001f;
+  constexpr float baseRadsPerMsec = k2pi * revPerSec * secPerMsec; 
+  const float baseRads = fmod(baseRadsPerMsec * ms, k2pi);
+
+  auto square = [](const float x) -> float { return x * x;};
+
   for (const auto& li : led) {
     Vec3f p = li.pos;
-    float y = 1.5f * pow(p.y / 1.5f, 2.0f);
-    p = Rotationf(Vec3f(0, 1, 0), -twistRadsPerMeter * y + yrot).Rotate(p);
+    float y = 1.5f * square(p.y / 1.5f);
+    p = Rotationf(Vec3f(0, 1, 0), -twistRadsPerMeter * y + baseRads).Rotate(p);
     p.y = 0;
-    p.Normalize();
     float x = atan2(p.x, p.z) / k2pi + 0.5f;
     CRGB& pc = strip[li.index];
     pc = rgMap.lookup(x);
   }
-  yrot = fmod(yrot + k2pi / 45.0f, k2pi);
 }
 
 void clear(CRGB color) {
