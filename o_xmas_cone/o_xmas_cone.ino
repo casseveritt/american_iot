@@ -14,7 +14,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 // for mode dev
-// #define FORCE_MODE 0
+#define FORCE_MODE 0
 
 constexpr float k2pi = 2.0f * M_PI;
 
@@ -223,12 +223,19 @@ void setup() {
   maroonWhite.addColor(CRGB::White, 8);
   maroonWhite.addColor(CRGB::White, 8);
   maroonWhite.addColor(CRGB::White, 8);
+  maroonWhite.addColor(CRGB::White, 8);
+  maroonWhite.addColor(CRGB::White, 8);
+  maroonWhite.addColor(CRGB::White, 8);
+  maroonWhite.addColor(CRGB::White, 8);
+  maroonWhite.addColor(CRGB::White, 8);
   maroonWhite.addColor(CRGB::Maroon, 8);
   maroonWhite.addColor(CRGB::Maroon, 8);
   maroonWhite.addColor(CRGB::Maroon, 8);
-  maroonWhite.addColor(CRGB::Black);
-  maroonWhite.addColor(CRGB::Black);
-  maroonWhite.addColor(CRGB::Black);
+  maroonWhite.addColor(CRGB::Maroon, 8);
+  maroonWhite.addColor(CRGB::Maroon, 8);
+  maroonWhite.addColor(CRGB::Maroon, 8);
+  maroonWhite.addColor(CRGB::Maroon, 8);
+  maroonWhite.addColor(CRGB::Maroon, 8);
 
   for (int i = 0; i < NUM_LEDS; i++) {
     strip[i] = CRGB::Black;
@@ -336,16 +343,17 @@ void rot_y() {
   const Vec3f center(0, 0.75f, 0);
 
   const auto ms = frameTime.t0();
-  constexpr float revPerSec = 1.0f;
+  constexpr float revPerSec = 0.125f;
   constexpr float secPerMsec = 0.001f;
   constexpr float baseRadsPerMsec = k2pi * revPerSec * secPerMsec; 
   const float baseRads = fmod(baseRadsPerMsec * ms, k2pi);
 
   for (const auto& li : led) {
     Vec3f p = li.pos - center;
-    p = Rotationf(Vec3f(0, 1, 0), baseRads).Rotate(p);
-    float theta = atan2(p.x, p.z) / k2pi + 0.5f;
-    strip[li.index] = maroonWhite.lookup(theta);
+    float posRev = 0.125f * (atan2(p.x, p.z) / k2pi + 0.5f);
+    float timeRev = baseRads / k2pi;
+    float rev = fmod(posRev + timeRev, 1.0f);
+    strip[li.index] = maroonWhite.lookup(rev);
   }
 }
 
