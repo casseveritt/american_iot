@@ -14,7 +14,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 // for mode dev
-// #define FORCE_MODE 2
+// #define FORCE_MODE 0
 
 constexpr float k2pi = 2.0f * M_PI;
 
@@ -177,6 +177,7 @@ struct ColorMap {
 ColorMap cm1;
 ColorMap rgMap;
 ColorMap blueBlack;
+ColorMap maroonWhite;
 
 void setup() {
 
@@ -218,6 +219,16 @@ void setup() {
   blueBlack.addColor(CRGB::Black);
   blueBlack.addColor(CRGB::Black);
   blueBlack.addColor(CRGB::Black);
+
+  maroonWhite.addColor(CRGB::White, 8);
+  maroonWhite.addColor(CRGB::White, 8);
+  maroonWhite.addColor(CRGB::White, 8);
+  maroonWhite.addColor(CRGB::Maroon, 8);
+  maroonWhite.addColor(CRGB::Maroon, 8);
+  maroonWhite.addColor(CRGB::Maroon, 8);
+  maroonWhite.addColor(CRGB::Black);
+  maroonWhite.addColor(CRGB::Black);
+  maroonWhite.addColor(CRGB::Black);
 
   for (int i = 0; i < NUM_LEDS; i++) {
     strip[i] = CRGB::Black;
@@ -330,18 +341,11 @@ void rot_y() {
   constexpr float baseRadsPerMsec = k2pi * revPerSec * secPerMsec; 
   const float baseRads = fmod(baseRadsPerMsec * ms, k2pi);
 
-
   for (const auto& li : led) {
     Vec3f p = li.pos - center;
-    p.y = 0;
-    p.Normalize();
     p = Rotationf(Vec3f(0, 1, 0), baseRads).Rotate(p);
-    p.x *= p.x * p.x * p.x * p.x;  // pow(p.x, 5.0f);
-    p.z *= p.z * p.z * p.z * p.z;  // pow(p.z, 5.0f);
-
-    p *= 25;
-    CRGB& pc = strip[li.index];
-    pc = CRGB(max(0.0f, p.x), max(0.0f, p.y), max(0.0f, p.z));
+    float theta = atan2(p.x, p.z) / k2pi + 0.5f;
+    strip[li.index] = maroonWhite.lookup(theta);
   }
 }
 
