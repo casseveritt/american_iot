@@ -14,7 +14,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 // for mode dev
-#define FORCE_MODE 5
+// #define FORCE_MODE 5
 
 constexpr float k2pi = 2.0f * M_PI;
 
@@ -258,7 +258,7 @@ void setup() {
     float delta = abs(seg.second - seg.first);
     int incr = (j & 1) ? -1 : 1;
     for (int i = seg.first; i != seg.second; i += incr) {
-      int eiffleDelay = (rand() % (3000 - 500 + 1)) + 500;
+      int eiffleDelay = (rand() % (3000 - 1000 + 1)) + 1000;
       ledDelay.push_back(eiffleDelay);
       timing.push_back(rand() % eiffleDelay + 1);
       led.push_back(LedInfo());
@@ -457,16 +457,24 @@ void eiffle() {
     const auto& li = led[i];
     CRGB& pc = strip[li.index];
     float ratio = timing[i] / min(int(ledDelay[i]), 1000);
-    if (timing[i] >= ledDelay[i]) { // Flash after delay
-      pc = CRGB(255, 255, 255);
-      timing[i] = int(timing[i]) % int(ledDelay[i]);
+    if (timing[i] == 0) { // Flash after delay
+      pc = CRGB::White;
+      timing[i] += timeTaken;
     }
-    else if (ratio <= 0.5) { // Persistance
+    else if (ratio <= 0.4) { // Persistance
       int brightness = int((1.0f - (ratio * 2)) * 16);
-      pc = CRGB(brightness, brightness, brightness);
+      pc = CRGB::Grey;
+      pc.r *= (1 - ratio / 0.4); // nscale8 does not change the intensity in the way I wanted.
+      pc.g *= (1 - ratio / 0.4); // Directly multiplying each channel by the intensity between 0.0 and 1.0
+      pc.b *= (1 - ratio / 0.4); // worked much better.
+      timing[i] += timeTaken;
+    } else if (timing[i] >= ledDelay[i]) {
+      timing[i] = 0;
+      ledDelay[i] = (rand() % (3000 - 1000 + 1)) + 1000;
+    } else { // Clear color
+      pc = CRGB::Black;
+      timing[i] += timeTaken;
     }
-    else pc = CRGB::Black; // Clear color
-    timing[i] += timeTaken;
   }
 }
 
