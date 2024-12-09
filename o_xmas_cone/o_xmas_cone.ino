@@ -458,13 +458,12 @@ void eiffle() {
     CRGB& pc = strip[li.index];
     float ratio = timing[i] / min(int(ledDelay[i]), 1000);
     if (timing[i] >= ledDelay[i]) { // Flash after delay
-      pc = CRGB::White, 16;
+      pc = CRGB(255, 255, 255);
       timing[i] = int(timing[i]) % int(ledDelay[i]);
     }
     else if (ratio <= 0.5) { // Persistance
-      int brightness = int(1 - (ratio * 2));
-      pc = CRGB::White, brightness;
-      pc.nscale8(8);
+      int brightness = int((1.0f - (ratio * 2)) * 16);
+      pc = CRGB(brightness, brightness, brightness);
     }
     else pc = CRGB::Black; // Clear color
     timing[i] += timeTaken;
