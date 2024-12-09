@@ -14,7 +14,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 // for mode dev
-#define FORCE_MODE 0
+#define FORCE_MODE 5
 
 constexpr float k2pi = 2.0f * M_PI;
 
@@ -131,6 +131,8 @@ struct FrameTime {
 FrameTime frameTime;
 
 vector<Sphere> spheres;
+vector<float> ledDelay;
+vector<float> timing;
 
 int pixaddr(int index) {
   if (index >= NUM_LEDS_PER_STRIP) {
@@ -256,6 +258,9 @@ void setup() {
     float delta = abs(seg.second - seg.first);
     int incr = (j & 1) ? -1 : 1;
     for (int i = seg.first; i != seg.second; i += incr) {
+      int eiffleDelay = (rand() % (3000 - 500 + 1)) + 500;
+      ledDelay.push_back(eiffleDelay);
+      timing.push_back(rand() % eiffleDelay + 1);
       led.push_back(LedInfo());
       auto& li = led.back();
       li.index = pixaddr(i);
@@ -443,6 +448,29 @@ void perlin_flashing() {
   }
 }
 
+void eiffle() {
+  int ms = frameTime.t0();
+  int timeTaken = ms - startTime;
+  startTime = ms;
+
+  for (int i = 0; i < led.size(); i++) { // Iterate through LEDs
+    const auto& li = led[i];
+    CRGB& pc = strip[li.index];
+    float ratio = timing[i] / min(int(ledDelay[i]), 1000);
+    if (timing[i] >= ledDelay[i]) { // Flash after delay
+      pc = CRGB::White, 16;
+      timing[i] = int(timing[i]) % int(ledDelay[i]);
+    }
+    else if (ratio <= 0.5) { // Persistance
+      int brightness = int(1 - (ratio * 2));
+      pc = CRGB::White, brightness;
+      pc.nscale8(8);
+    }
+    else pc = CRGB::Black; // Clear color
+    timing[i] += timeTaken;
+  }
+}
+
 void drawFrameTime() {
   int dt = frameTime.dt();  // Time between frames in ms
 
@@ -496,7 +524,7 @@ void loop() {
     countdown = modeSwapTime;
     int current = mode;
     while (mode == current) {
-      mode = rand() % 5;
+      mode = rand() % 6;
     }
 #if defined(FORCE_MODE)
     mode = FORCE_MODE;
@@ -520,6 +548,9 @@ void loop() {
       perlin();
       break;
     case 5:
+      eiffle();
+      break;
+    case 6:
       clear(CRGB::Red);
       break;
     case 7:
