@@ -130,8 +130,8 @@ struct FrameTime {
 FrameTime frameTime;
 
 vector<Sphere> spheres;
-vector<float> ledDelay;
-vector<float> timing;
+uint32_t sparkleDelay[NUM_LEDS];
+uint32_t sparkleTime[NUM_LEDS];
 
 int pixaddr(int index) {
   if (index >= NUM_LEDS_PER_STRIP) {
@@ -165,8 +165,8 @@ struct ColorMap {
   }
 
   CRGB lookup(float t) const {
-    t = clamp(t, 0.0f, 0.999f);
-    const float ts = t * cm.size();
+    t = clamp(t, 0.0f, 1.0f);
+    const float ts = t * cm.size() - 1;
     const int ti = ts;
     const float tfr = ts - ti;
     return cm[ti].lerp8(cm[(ti + 1) % cm.size()], uint8_t(255 * tfr));
@@ -179,6 +179,7 @@ ColorMap cm1;
 ColorMap rgMap;
 ColorMap blueBlack;
 ColorMap maroonWhite;
+ColorMap sparkle;
 
 void setup() {
 
@@ -238,6 +239,15 @@ void setup() {
   maroonWhite.addColor(CRGB::Maroon, 8);
   maroonWhite.addColor(CRGB::Maroon, 8);
 
+  sparkle.clear();
+  sparkle.addColor(CRGB::White);
+  sparkle.addColor(CRGB::Yellow, 16);
+  sparkle.addColor(CRGB::Orange, 16);
+  sparkle.addColor(CRGB::Red, 8);
+  //sparkle.addColor(CRGB(200 / 4, 110 / 4, 0));
+  //sparkle.addColor(CRGB(178 / 4, 21 / 4, 0));
+  sparkle.addColor(CRGB::Black);
+
   for (int i = 0; i < NUM_LEDS; i++) {
     strip[i] = CRGB::Black;
   }
@@ -257,12 +267,12 @@ void setup() {
     float delta = abs(seg.second - seg.first);
     int incr = (j & 1) ? -1 : 1;
     for (int i = seg.first; i != seg.second; i += incr) {
-      int eiffelDelay = (rand() % (3000 - 1000 + 1)) + 1000;
-      ledDelay.push_back(eiffelDelay);
-      timing.push_back(rand() % eiffelDelay + 1);
       led.push_back(LedInfo());
       auto& li = led.back();
       li.index = pixaddr(i);
+      int eiffelDelay = (rand() % (3000 - 1000 + 1)) + 1000;
+      sparkleDelay[li.index] = eiffelDelay;
+      sparkleTime[li.index] = (rand() % eiffelDelay + 1);
       auto& p = li.pos;
       float step = abs(i - seg.first);
       float frac = step / delta;
@@ -299,12 +309,12 @@ void loop_sphere() {
     spheres.push_back(s);
     setDelayTime(ms, 333, 200);
   }
-  
-  for (int i = 0; i < spheres.size(); i++) { // Moves all the spheres
+
+  for (int i = 0; i < spheres.size(); i++) {  // Moves all the spheres
     Sphere& s = spheres[i];
     s.stepForward(dt);
   }
-  
+
   for (int i = 0; i < spheres.size(); i++) {  // Culls spheres outside the bounds of the tree
     Sphere& s = spheres[i];
     if (s.pos.z > (0.31f + s.radius)) {
@@ -316,7 +326,7 @@ void loop_sphere() {
   }
 
   Rotationf rotworld(Vec3f(0, 1, 0), ToRadians(float(spheresRotation) / 10));  // Rotates effect about the Y-axis
-  spheresRotation = (spheresRotation + (dt / 10)) % (360 * 10);     // Rate of rotation
+  spheresRotation = (spheresRotation + (dt / 10)) % (360 * 10);                // Rate of rotation
 
   for (auto li : led) {
     CRGB& pc = strip[li.index];
@@ -349,7 +359,7 @@ void rot_y() {
   const auto ms = frameTime.t0();
   constexpr float revPerSec = 0.125f;
   constexpr float secPerMsec = 0.001f;
-  constexpr float baseRadsPerMsec = k2pi * revPerSec * secPerMsec; 
+  constexpr float baseRadsPerMsec = k2pi * revPerSec * secPerMsec;
   const float baseRads = fmod(baseRadsPerMsec * ms, k2pi);
 
   for (const auto& li : led) {
@@ -368,7 +378,7 @@ void twist() {
 
   constexpr float revPerSec = 1.0f;
   constexpr float secPerMsec = 0.001f;
-  constexpr float baseRadsPerMsec = k2pi * revPerSec * secPerMsec; 
+  constexpr float baseRadsPerMsec = k2pi * revPerSec * secPerMsec;
   const float baseRads = fmod(baseRadsPerMsec * ms, k2pi);
 
   for (const auto& li : led) {
@@ -386,10 +396,12 @@ void screw() {
 
   constexpr float revPerSec = 1.0f;
   constexpr float secPerMsec = 0.001f;
-  constexpr float baseRadsPerMsec = k2pi * revPerSec * secPerMsec; 
+  constexpr float baseRadsPerMsec = k2pi * revPerSec * secPerMsec;
   const float baseRads = fmod(baseRadsPerMsec * ms, k2pi);
 
-  auto square = [](const float x) -> float { return x * x;};
+  auto square = [](const float x) -> float {
+    return x * x;
+  };
 
   for (const auto& li : led) {
     Vec3f p = li.pos;
@@ -448,46 +460,20 @@ void perlin_flashing() {
 }
 
 void eiffel() {
-  int ms = frameTime.t0();
   int dt = frameTime.dt();
 
-  for (int i = 0; i < led.size(); i++) { // Iterate through LEDs
-    const auto& li = led[i];
-    CRGB& pc = strip[li.index];
-    float ratio = timing[i] / 1000;
-    if (timing[i] == 0) { // Flash after delay
-      pc = CRGB::White;
-      timing[i] += dt;
+  for (auto& li : led) {
+    const int i = li.index;
+    float t = 0.25f + sparkleTime[i] / 1000.0f;  // nominal sparkle duration
+    strip[i] = sparkle.lookup(t);
+    sparkleTime[i] += dt;
+    if (sparkleTime[i] >= sparkleDelay[i]) {
+      sparkleTime[i] = 0;
+      sparkleDelay[i] = (rand() % (3000 - 1000 + 1)) + 1000;
     }
-    else if (ratio <= 0.05) { // Persistance
-      pc = CRGB::Yellow;
-      float mult = 1 - ratio / 0.05;
-      pc.r *= (mult); // nscale8 does not change the intensity in the way I wanted.
-      pc.g *= (mult); // Directly multiplying each channel by the intensity between 0.0 and 1.0
-      pc.b *= (mult); // worked much better.
-      timing[i] += dt;
-    }
-    else if (ratio <= 0.3) { // Persistance
-      pc = CRGB(200 / 4, 110 / 4, 0);
-      float mult = 1 - ratio / 0.3;
-      pc.r *= (mult); // nscale8 does not change the intensity in the way I wanted.
-      pc.g *= (mult); // Directly multiplying each channel by the intensity between 0.0 and 1.0
-      pc.b *= (mult); // worked much better.
-      timing[i] += dt;
-    } else if (ratio <= 0.4) { // Persistance
-      pc = CRGB(178 / 4, 21 / 4, 0);
-      float mult = 1 - ratio / 0.4;
-      pc.r *= (mult); // nscale8 does not change the intensity in the way I wanted.
-      pc.g *= (mult); // Directly multiplying each channel by the intensity between 0.0 and 1.0
-      pc.b *= (mult); // worked much better.
-      timing[i] += dt;
-    } else if (timing[i] >= ledDelay[i]) {
-      timing[i] = 0;
-      ledDelay[i] = (rand() % (3000 - 1000 + 1)) + 1000;
-    } else { // Clear color
-      pc = CRGB::Black;
-      timing[i] += dt;
-    }
+  }
+  if (frameTime.t0() - newProgStartMs < 2000) {
+    clear(CRGB::Black);
   }
 }
 
