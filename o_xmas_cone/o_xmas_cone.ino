@@ -456,17 +456,32 @@ void eiffle() {
   for (int i = 0; i < led.size(); i++) { // Iterate through LEDs
     const auto& li = led[i];
     CRGB& pc = strip[li.index];
-    float ratio = timing[i] / min(int(ledDelay[i]), 1000);
+    float ratio = timing[i] / 1000;
     if (timing[i] == 0) { // Flash after delay
       pc = CRGB::White;
       timing[i] += timeTaken;
     }
-    else if (ratio <= 0.4) { // Persistance
-      int brightness = int((1.0f - (ratio * 2)) * 16);
-      pc = CRGB::Grey;
-      pc.r *= (1 - ratio / 0.4); // nscale8 does not change the intensity in the way I wanted.
-      pc.g *= (1 - ratio / 0.4); // Directly multiplying each channel by the intensity between 0.0 and 1.0
-      pc.b *= (1 - ratio / 0.4); // worked much better.
+    else if (ratio <= 0.05) { // Persistance
+      pc = CRGB::Yellow;
+      float mult = 1 - ratio / 0.05;
+      pc.r *= (mult); // nscale8 does not change the intensity in the way I wanted.
+      pc.g *= (mult); // Directly multiplying each channel by the intensity between 0.0 and 1.0
+      pc.b *= (mult); // worked much better.
+      timing[i] += timeTaken;
+    }
+    else if (ratio <= 0.3) { // Persistance
+      pc = CRGB(200 / 4, 110 / 4, 0);
+      float mult = 1 - ratio / 0.3;
+      pc.r *= (mult); // nscale8 does not change the intensity in the way I wanted.
+      pc.g *= (mult); // Directly multiplying each channel by the intensity between 0.0 and 1.0
+      pc.b *= (mult); // worked much better.
+      timing[i] += timeTaken;
+    } else if (ratio <= 0.4) { // Persistance
+      pc = CRGB(178 / 4, 21 / 4, 0);
+      float mult = 1 - ratio / 0.4;
+      pc.r *= (mult); // nscale8 does not change the intensity in the way I wanted.
+      pc.g *= (mult); // Directly multiplying each channel by the intensity between 0.0 and 1.0
+      pc.b *= (mult); // worked much better.
       timing[i] += timeTaken;
     } else if (timing[i] >= ledDelay[i]) {
       timing[i] = 0;
