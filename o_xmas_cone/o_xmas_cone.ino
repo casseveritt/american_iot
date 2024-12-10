@@ -99,7 +99,6 @@ const CRGB colors[] = { CRGB::Red, CRGB::Green, CRGB::Blue, CRGB::Orange, CRGB::
 CRGB strip[NUM_LEDS];
 
 int delayTime = 0;
-int startTime = 0;
 
 struct FrameTime {
 
@@ -290,8 +289,8 @@ void setDelayTime(uint32_t ms, int max, int min) {
 
 void loop_sphere() {
   int ms = frameTime.t0();
-  int timeTaken = ms - startTime;
-  startTime = ms;
+  int dt = frameTime.dt();
+
   if (ms >= delayTime && spheres.size() < 50) {
     Sphere s = Sphere(randColor());
     s.setPos();
@@ -303,7 +302,7 @@ void loop_sphere() {
   
   for (int i = 0; i < spheres.size(); i++) { // Moves all the spheres
     Sphere& s = spheres[i];
-    s.stepForward(timeTaken);
+    s.stepForward(dt);
   }
   
   for (int i = 0; i < spheres.size(); i++) {  // Culls spheres outside the bounds of the tree
@@ -317,7 +316,7 @@ void loop_sphere() {
   }
 
   Rotationf rotworld(Vec3f(0, 1, 0), ToRadians(float(spheresRotation) / 10));  // Rotates effect about the Y-axis
-  spheresRotation = (spheresRotation + (timeTaken / 10)) % (360 * 10);     // Rate of rotation
+  spheresRotation = (spheresRotation + (dt / 10)) % (360 * 10);     // Rate of rotation
 
   for (auto li : led) {
     CRGB& pc = strip[li.index];
@@ -450,8 +449,7 @@ void perlin_flashing() {
 
 void eiffel() {
   int ms = frameTime.t0();
-  int timeTaken = ms - startTime;
-  startTime = ms;
+  int dt = frameTime.dt();
 
   for (int i = 0; i < led.size(); i++) { // Iterate through LEDs
     const auto& li = led[i];
@@ -459,7 +457,7 @@ void eiffel() {
     float ratio = timing[i] / 1000;
     if (timing[i] == 0) { // Flash after delay
       pc = CRGB::White;
-      timing[i] += timeTaken;
+      timing[i] += dt;
     }
     else if (ratio <= 0.05) { // Persistance
       pc = CRGB::Yellow;
@@ -467,7 +465,7 @@ void eiffel() {
       pc.r *= (mult); // nscale8 does not change the intensity in the way I wanted.
       pc.g *= (mult); // Directly multiplying each channel by the intensity between 0.0 and 1.0
       pc.b *= (mult); // worked much better.
-      timing[i] += timeTaken;
+      timing[i] += dt;
     }
     else if (ratio <= 0.3) { // Persistance
       pc = CRGB(200 / 4, 110 / 4, 0);
@@ -475,20 +473,20 @@ void eiffel() {
       pc.r *= (mult); // nscale8 does not change the intensity in the way I wanted.
       pc.g *= (mult); // Directly multiplying each channel by the intensity between 0.0 and 1.0
       pc.b *= (mult); // worked much better.
-      timing[i] += timeTaken;
+      timing[i] += dt;
     } else if (ratio <= 0.4) { // Persistance
       pc = CRGB(178 / 4, 21 / 4, 0);
       float mult = 1 - ratio / 0.4;
       pc.r *= (mult); // nscale8 does not change the intensity in the way I wanted.
       pc.g *= (mult); // Directly multiplying each channel by the intensity between 0.0 and 1.0
       pc.b *= (mult); // worked much better.
-      timing[i] += timeTaken;
+      timing[i] += dt;
     } else if (timing[i] >= ledDelay[i]) {
       timing[i] = 0;
       ledDelay[i] = (rand() % (3000 - 1000 + 1)) + 1000;
     } else { // Clear color
       pc = CRGB::Black;
-      timing[i] += timeTaken;
+      timing[i] += dt;
     }
   }
 }
