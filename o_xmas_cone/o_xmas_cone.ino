@@ -258,9 +258,9 @@ void setup() {
     float delta = abs(seg.second - seg.first);
     int incr = (j & 1) ? -1 : 1;
     for (int i = seg.first; i != seg.second; i += incr) {
-      int eiffleDelay = (rand() % (3000 - 1000 + 1)) + 1000;
-      ledDelay.push_back(eiffleDelay);
-      timing.push_back(rand() % eiffleDelay + 1);
+      int eiffelDelay = (rand() % (3000 - 1000 + 1)) + 1000;
+      ledDelay.push_back(eiffelDelay);
+      timing.push_back(rand() % eiffelDelay + 1);
       led.push_back(LedInfo());
       auto& li = led.back();
       li.index = pixaddr(i);
@@ -448,7 +448,7 @@ void perlin_flashing() {
   }
 }
 
-void eiffle() {
+void eiffel() {
   int ms = frameTime.t0();
   int timeTaken = ms - startTime;
   startTime = ms;
@@ -570,7 +570,7 @@ void loop() {
       perlin();
       break;
     case 5:
-      eiffle();
+      eiffel();
       break;
     case 6:
       clear(CRGB::Red);
