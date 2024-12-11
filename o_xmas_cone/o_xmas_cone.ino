@@ -10,6 +10,7 @@
 
 #define LED0_PIN 7
 #define LED1_PIN 8
+#define NEXT_PIN 2
 #define NUM_LEDS_PER_STRIP 598
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
@@ -186,6 +187,8 @@ void setup() {
   FastLED.addLeds<WS2812, LED0_PIN, GRB>(strip, NUM_LEDS_PER_STRIP);
   FastLED.addLeds<WS2812, LED1_PIN, GRB>(strip + NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
   FastLED.setBrightness(255);
+
+  pinMode(NEXT_PIN, INPUT_PULLUP);
 
   cm1.addColor(CRGB::Maroon, 32);
   cm1.addColor(CRGB::Maroon, 32);
@@ -525,6 +528,14 @@ void loop() {
   frameTime.update();
   countdown -= frameTime.dt();
   const int modeSwapTime = 300 * 1000;  // Time to change modes in seconds
+
+  static int oldNext = HIGH;
+  int next = digitalRead(NEXT_PIN);
+  if (oldNext == LOW && next == HIGH) {
+    countdown = modeSwapTime;
+    mode = (mode + 1) % 6;
+  }
+  oldNext = next;
 
   if (countdown < 0) {
     countdown = modeSwapTime;
