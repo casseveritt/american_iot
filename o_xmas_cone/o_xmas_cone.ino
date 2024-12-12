@@ -15,7 +15,7 @@
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 // for mode dev
-// #define FORCE_MODE 5
+// #define FORCE_MODE 0
 
 constexpr float k2pi = 2.0f * M_PI;
 
@@ -173,6 +173,14 @@ struct ColorMap {
     return cm[ti].lerp8(cm[(ti + 1) % cm.size()], uint8_t(255 * tfr));
   }
 
+  CRGB lookupWrapped(float t) const {
+    t = t - floor(t);
+    const float ts = t * cm.size() - 0.0001f;
+    const int ti = ts;
+    const float tfr = ts - ti;
+    return cm[ti].lerp8(cm[(ti + 1) % cm.size()], uint8_t(255 * tfr));
+  }
+
   vector<CRGB> cm;
 };
 
@@ -180,6 +188,7 @@ ColorMap cm1;
 ColorMap rgMap;
 ColorMap blueBlack;
 ColorMap maroonWhite;
+ColorMap rgbcmy;
 ColorMap sparkle;
 
 void setup() {
@@ -190,6 +199,31 @@ void setup() {
 
   pinMode(NEXT_PIN, INPUT_PULLUP);
 
+  rgbcmy.addColor(CRGB::Red, 32);
+  rgbcmy.addColor(CRGB::Red, 32);
+  rgbcmy.addColor(CRGB::Red, 32);
+  rgbcmy.addColor(CRGB::Red, 32);
+  rgbcmy.addColor(CRGB::Green, 32);
+  rgbcmy.addColor(CRGB::Green, 32);
+  rgbcmy.addColor(CRGB::Green, 32);
+  rgbcmy.addColor(CRGB::Green, 32);
+  rgbcmy.addColor(CRGB::Blue, 32);
+  rgbcmy.addColor(CRGB::Blue, 32);
+  rgbcmy.addColor(CRGB::Blue, 32);
+  rgbcmy.addColor(CRGB::Blue, 32);
+  rgbcmy.addColor(CRGB::Cyan, 32);
+  rgbcmy.addColor(CRGB::Cyan, 32);
+  rgbcmy.addColor(CRGB::Cyan, 32);
+  rgbcmy.addColor(CRGB::Cyan, 32);
+  rgbcmy.addColor(CRGB::Magenta, 32);
+  rgbcmy.addColor(CRGB::Magenta, 32);
+  rgbcmy.addColor(CRGB::Magenta, 32);
+  rgbcmy.addColor(CRGB::Magenta, 32);
+  rgbcmy.addColor(CRGB::Yellow, 32);
+  rgbcmy.addColor(CRGB::Yellow, 32);
+  rgbcmy.addColor(CRGB::Yellow, 32);
+  rgbcmy.addColor(CRGB::Yellow, 32);
+  
   cm1.addColor(CRGB::Maroon, 32);
   cm1.addColor(CRGB::Maroon, 32);
   cm1.addColor(CRGB::Maroon, 8);
@@ -360,17 +394,16 @@ void rot_y() {
   const Vec3f center(0, 0.75f, 0);
 
   const auto ms = frameTime.t0();
-  constexpr float revPerSec = 0.125f;
+  constexpr float revPerSec = 0.0625f;
   constexpr float secPerMsec = 0.001f;
-  constexpr float baseRadsPerMsec = k2pi * revPerSec * secPerMsec;
-  const float baseRads = fmod(baseRadsPerMsec * ms, k2pi);
+  constexpr float baseRevsPerMsec = revPerSec * secPerMsec;
+  const float baseRevs = fmod(baseRevsPerMsec * ms, 1.0f);
 
   for (const auto& li : led) {
     Vec3f p = li.pos - center;
     float posRev = 0.125f * (atan2(p.x, p.z) / k2pi + 0.5f);
-    float timeRev = baseRads / k2pi;
-    float rev = fmod(posRev + timeRev, 1.0f);
-    strip[li.index] = maroonWhite.lookup(rev);
+    float rev = fmod(posRev + baseRevs, 1.0f);
+    strip[li.index] = rgbcmy.lookupWrapped(rev);
   }
 }
 
