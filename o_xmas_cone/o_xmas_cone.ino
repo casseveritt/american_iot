@@ -184,12 +184,12 @@ struct ColorMap {
   vector<CRGB> cm;
 };
 
-ColorMap cm1;
+ColorMap cm[2];
 ColorMap rgMap;
 ColorMap blueBlack;
 ColorMap maroonWhite;
 ColorMap rgbcmy;
-ColorMap sparkle;
+ColorMap sparkle[2];
 
 void setup() {
 
@@ -224,17 +224,29 @@ void setup() {
   rgbcmy.addColor(CRGB::Yellow, 32);
   rgbcmy.addColor(CRGB::Yellow, 32);
   
-  cm1.addColor(CRGB::Maroon, 32);
-  cm1.addColor(CRGB::Maroon, 32);
-  cm1.addColor(CRGB::Maroon, 8);
-  cm1.addColor(CRGB::Grey, 8);
-  cm1.addColor(CRGB::Maroon, 8);
-  cm1.addColor(CRGB::Maroon, 32);
-  cm1.addColor(CRGB::Grey, 8);
-  cm1.addColor(CRGB::Black);
-  cm1.addColor(CRGB::White, 64);
-  cm1.addColor(CRGB::Black);
-  cm1.addColor(CRGB::Maroon, 8);
+  cm[0].addColor(CRGB::Maroon, 32);
+  cm[0].addColor(CRGB::Maroon, 32);
+  cm[0].addColor(CRGB::Maroon, 8);
+  cm[0].addColor(CRGB::Grey, 8);
+  cm[0].addColor(CRGB::Maroon, 8);
+  cm[0].addColor(CRGB::Maroon, 32);
+  cm[0].addColor(CRGB::Grey, 8);
+  cm[0].addColor(CRGB::Black);
+  cm[0].addColor(CRGB::White, 64);
+  cm[0].addColor(CRGB::Black);
+  cm[0].addColor(CRGB::Maroon, 8);
+
+  cm[1].addColor(CRGB::Blue, 32);
+  cm[1].addColor(CRGB::Blue, 32);
+  cm[1].addColor(CRGB::Blue, 8);
+  cm[1].addColor(CRGB::Grey, 8);
+  cm[1].addColor(CRGB::Blue, 8);
+  cm[1].addColor(CRGB::Blue, 32);
+  cm[1].addColor(CRGB::Grey, 8);
+  cm[1].addColor(CRGB::Black);
+  cm[1].addColor(CRGB::White, 64);
+  cm[1].addColor(CRGB::Cyan, 32);
+  cm[1].addColor(CRGB::Black);
 
   rgMap.addColor(CRGB::Red, 8);
   rgMap.addColor(CRGB::Red, 8);
@@ -276,14 +288,19 @@ void setup() {
   maroonWhite.addColor(CRGB::Maroon, 8);
   maroonWhite.addColor(CRGB::Maroon, 8);
 
-  sparkle.clear();
-  sparkle.addColor(CRGB::White);
-  sparkle.addColor(CRGB::Yellow, 16);
-  sparkle.addColor(CRGB::Orange, 16);
-  sparkle.addColor(CRGB::Red, 8);
-  //sparkle.addColor(CRGB(200 / 4, 110 / 4, 0));
-  //sparkle.addColor(CRGB(178 / 4, 21 / 4, 0));
-  sparkle.addColor(CRGB::Black);
+  sparkle[0].clear();
+  sparkle[0].addColor(CRGB::White);
+  sparkle[0].addColor(CRGB::Yellow, 16);
+  sparkle[0].addColor(CRGB::Orange, 16);
+  sparkle[0].addColor(CRGB::Red, 8);
+  sparkle[0].addColor(CRGB::Black);
+
+  sparkle[1].clear();
+  sparkle[1].addColor(CRGB::White);
+  sparkle[1].addColor(CRGB::Cyan, 16);
+  sparkle[1].addColor(CRGB::BlueViolet, 16);
+  sparkle[1].addColor(CRGB::Blue, 8);
+  sparkle[1].addColor(CRGB::Black);
 
   for (int i = 0; i < NUM_LEDS; i++) {
     strip[i] = CRGB::Black;
@@ -460,13 +477,14 @@ void clear(CRGB color) {
 
 void perlin() {
   uint32_t dt = (frameTime.t0() - newProgStartMs);
+  const ColorMap& cmap = (newProgStartMs & 128) ? cm[0] : cm[1];
   Quaternionf q(Vec3f(0, 1, 0), ToRadians(21.0f));
   for (const auto& li : led) {
     CRGB& pc = strip[li.index];
     Vec3f p = q.Rotate(li.pos * 7);
     p.y *= 2.0f;
     float noise = 0.5f + 0.5f * ImprovedNoise::noise(p.x - (dt * 0.0003f), p.y, p.z);
-    pc = cm1.lookup(noise);
+    pc = cmap.lookup(noise);
   }
 }
 
@@ -497,19 +515,38 @@ void perlin_flashing() {
 
 void eiffel() {
   int dt = frameTime.dt();
+  int modeMs = frameTime.t0() - newProgStartMs;
+  int cmap = (newProgStartMs & 128) > 0 ? 1 : 0;
 
   for (auto& li : led) {
     const int i = li.index;
     float t = 0.25f + sparkleTime[i] / 1000.0f;  // nominal sparkle duration
-    strip[i] = sparkle.lookup(t);
+    strip[i] = sparkle[cmap].lookup(t);
     sparkleTime[i] += dt;
     if (sparkleTime[i] >= sparkleDelay[i]) {
       sparkleTime[i] = 0;
       sparkleDelay[i] = (rand() % (3000 - 1000 + 1)) + 1000;
     }
   }
-  if (frameTime.t0() - newProgStartMs < 2000) {
+  if (modeMs < 2000) {
     clear(CRGB::Black);
+  }
+
+
+}
+
+void grid() {
+  auto gridline = [](float x) -> float {
+    x = abs(x - floor(x) - 0.5f) * 2.0f;
+    return clamp((x - 0.8f) * 5, 0.0f, 1.0f);
+  };
+  int t0 = frameTime.t0();
+  Rotationf r(Vec3f(1.0f, 1.0f, 1.0f).Normalized(), ToRadians(float(t0 % 36000) / 100.0f));
+  for(auto li : led) {
+    Vec3f p = r.Rotate(li.pos) * 10.0f;
+    auto& pc = strip[li.index];
+    pc = CRGB::Black;
+    pc = CRGB(gridline(p.x) * 64, gridline(p.y) * 64, gridline(p.z) * 64);
   }
 }
 
@@ -566,6 +603,7 @@ void loop() {
   int next = digitalRead(NEXT_PIN);
   if (oldNext == LOW && next == HIGH) {
     countdown = modeSwapTime;
+    newProgStartMs = frameTime.t0();
     mode = (mode + 1) % 6;
   }
   oldNext = next;
@@ -601,7 +639,7 @@ void loop() {
       eiffel();
       break;
     case 6:
-      clear(CRGB::Red);
+      grid();
       break;
     case 7:
       perlin_flashing();
