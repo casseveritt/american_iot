@@ -426,17 +426,19 @@ void rot_y() {
 
 void twist() {
   auto ms = frameTime.t0();
+  constexpr int twistPeriodMsec = 12000;
 
-  float twistRadsPerMeter = k2pi * 2.5f * (sin(fmod((k2pi * ms) / 12000.0f, k2pi) + 1.0));
+  float twistRevsPerMeter = 2.5f * sin(k2pi * (float(ms % twistPeriodMsec) / twistPeriodMsec) + 1.0);
 
   constexpr float revPerSec = 1.0f;
   constexpr float secPerMsec = 0.001f;
-  constexpr float baseRadsPerMsec = k2pi * revPerSec * secPerMsec;
-  const float baseRads = fmod(baseRadsPerMsec * ms, k2pi);
+  constexpr float revsPerMsec = revPerSec * secPerMsec;
+  constexpr int revPeriodMsec = 1 / revsPerMsec;
+  const float baseRevs = float(ms % revPeriodMsec) / revPeriodMsec;
 
   for (const auto& li : led) {
     Vec3f p = li.pos;
-    p = Rotationf(Vec3f(0, 1, 0), -twistRadsPerMeter * p.y + baseRads).Rotate(p);
+    p = Rotationf(Vec3f(0, 1, 0), k2pi * (-twistRevsPerMeter * p.y + baseRevs)).Rotate(p);
     CRGB& pc = strip[li.index];
     float theta = atan2(p.x, p.z) / k2pi + 0.5f;
     pc = blueBlack.lookup(theta);
