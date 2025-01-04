@@ -16,6 +16,7 @@
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 // for mode dev
 // #define FORCE_MODE 0
+// #define FORCE_MODE 2 // screw
 
 constexpr float k2pi = 2.0f * M_PI;
 
@@ -461,7 +462,7 @@ void screw() {
   for (const auto& li : led) {
     Vec3f p = li.pos;
     float y = 1.5f * square(p.y / 1.5f);
-    p = Rotationf(Vec3f(0, 1, 0), -twistRadsPerMeter * y + baseRads).Rotate(p);
+    p = Rotationf(Vec3f(0, 1, 0).Normalized(), twistRadsPerMeter * y + baseRads).Rotate(p);
     p.y = 0;
     float x = atan2(p.x, p.z) / k2pi + 0.5f;
     CRGB& pc = strip[li.index];
