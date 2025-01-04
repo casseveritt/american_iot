@@ -16,7 +16,22 @@
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 // for mode dev
 // #define FORCE_MODE 0
-// #define FORCE_MODE 2 // screw
+
+int randMode(int current) {
+  int mode = 0;
+  do {
+  mode = rand() % 6;
+  } while(mode == current);
+  return mode;
+}
+
+#if defined(FORCE_MODE)
+#define NEXT_MODE() FORCE_MODE
+#define RAND_MODE() FORCE_MODE
+#else
+#define NEXT_MODE() ((mode + 1) % 6)
+#define RAND_MODE() randMode(mode)
+#endif
 
 constexpr float k2pi = 2.0f * M_PI;
 
@@ -428,8 +443,12 @@ void rot_y() {
 void twist() {
   auto ms = frameTime.t0();
   constexpr int twistPeriodMsec = 12000;
-
   float twistRevsPerMeter = 2.5f * sin(k2pi * (float(ms % twistPeriodMsec) / twistPeriodMsec) + 1.0);
+
+  auto PickCmap = [](const uint32_t ms) -> ColorMap& {
+    return (ms & 128) > 0 ? blueBlack : rgbcmy;
+  };
+  auto& cmap = PickCmap(newProgStartMs);
 
   constexpr float revPerSec = 1.0f;
   constexpr float secPerMsec = 0.001f;
@@ -442,7 +461,7 @@ void twist() {
     p = Rotationf(Vec3f(0, 1, 0), k2pi * (-twistRevsPerMeter * p.y + baseRevs)).Rotate(p);
     CRGB& pc = strip[li.index];
     float theta = atan2(p.x, p.z) / k2pi + 0.5f;
-    pc = blueBlack.lookup(theta);
+    pc = cmap.lookup(theta);
   }
 }
 
@@ -607,19 +626,13 @@ void loop() {
   if (oldNext == LOW && next == HIGH) {
     countdown = modeSwapTime;
     newProgStartMs = frameTime.t0();
-    mode = (mode + 1) % 6;
+    mode = NEXT_MODE();
   }
   oldNext = next;
 
   if (countdown < 0) {
     countdown = modeSwapTime;
-    int current = mode;
-    while (mode == current) {
-      mode = rand() % 6;
-    }
-#if defined(FORCE_MODE)
-    mode = FORCE_MODE;
-#endif
+    mode = RAND_MODE();
     newProgStartMs = frameTime.t0();
   }
   switch (mode) {
