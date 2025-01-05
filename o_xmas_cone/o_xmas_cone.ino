@@ -11,6 +11,7 @@
 #define LED0_PIN 7
 #define LED1_PIN 8
 #define NEXT_PIN 2
+// strip 1 has only 596 after some "adjustments" ...
 #define NUM_LEDS_PER_STRIP 598
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
@@ -20,8 +21,8 @@
 int randMode(int current) {
   int mode = 0;
   do {
-  mode = rand() % 6;
-  } while(mode == current);
+    mode = rand() % 6;
+  } while (mode == current);
   return mode;
 }
 
@@ -58,15 +59,18 @@ vector<Pair> segment = {
   { 11, 102 },
   { 193, 101 },
   { 205, 296 },
+
   { 387, 295 },
   { 401, 492 },
   { 582, 491 },
+
   { 628, 719 },
   { 808, 718 },
   { 822, 912 },
-  { 1001, 911 },
-  { 1015, 1105 },
-  { 1195, 1104 }
+
+  { 999, 911 },
+  { 1013, 1103 },
+  { 1193, 1102 }
 };
 
 struct LedInfo {
@@ -189,6 +193,13 @@ struct ColorMap {
     return cm[ti].lerp8(cm[(ti + 1) % cm.size()], uint8_t(255 * tfr));
   }
 
+  CRGB lookupNearest(float t) const {
+    t = clamp(t, 0.0f, 1.0f);
+    const float ts = t * cm.size();
+    const int ti = clamp(int(ts + 0.5f), 0, int(cm.size() - 1));
+    return cm[ti];
+  }
+
   CRGB lookupWrapped(float t) const {
     t = t - floor(t);
     const float ts = t * cm.size() - 0.0001f;
@@ -239,7 +250,7 @@ void setup() {
   rgbcmy.addColor(CRGB::Yellow, 32);
   rgbcmy.addColor(CRGB::Yellow, 32);
   rgbcmy.addColor(CRGB::Yellow, 32);
-  
+
   cm[0].addColor(CRGB::Maroon, 32);
   cm[0].addColor(CRGB::Maroon, 32);
   cm[0].addColor(CRGB::Maroon, 8);
@@ -493,7 +504,7 @@ void clear(CRGB color) {
   for (const auto& li : led) {
     CRGB& pc = strip[li.index];
     pc = color;
-    pc.nscale8(8);
+    pc.nscale8(16);
   }
 }
 
@@ -553,8 +564,6 @@ void eiffel() {
   if (modeMs < 2000) {
     clear(CRGB::Black);
   }
-
-
 }
 
 void grid() {
@@ -564,7 +573,7 @@ void grid() {
   };
   int t0 = frameTime.t0();
   Rotationf r(Vec3f(1.0f, 1.0f, 1.0f).Normalized(), ToRadians(float(t0 % 36000) / 100.0f));
-  for(auto li : led) {
+  for (auto li : led) {
     Vec3f p = r.Rotate(li.pos) * 10.0f;
     auto& pc = strip[li.index];
     pc = CRGB::Black;
@@ -575,8 +584,8 @@ void grid() {
 void drawFrameTime() {
   int dt = frameTime.dt();  // Time between frames in ms
 
-  constexpr int beginBarPix = 598;
-  constexpr int endBarPix = 623;
+  constexpr int beginBarPix = 602;
+  constexpr int endBarPix = 627;
   auto barpix = [](int i) -> CRGB& {
     return pix(i + beginBarPix);
   };
