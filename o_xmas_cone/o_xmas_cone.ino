@@ -2,6 +2,11 @@
 #include "perlin.h"
 
 #include <FastLED.h>
+#include <WiFi.h>
+
+const char* ssid = "anywhere";
+const char* password = "";
+
 #include <math.h>
 
 #include <vector>
@@ -218,6 +223,8 @@ ColorMap maroonWhite;
 ColorMap rgbcmy;
 ColorMap sparkle[2];
 
+WiFiServer server(80);
+
 void setup() {
 
   FastLED.addLeds<WS2812, LED0_PIN, GRB>(strip, NUM_LEDS_PER_STRIP);
@@ -365,6 +372,20 @@ void setup() {
     }
   }
   srand(analogRead(A0) + millis());
+
+  WiFi.begin(ssid, password);
+
+  uint8_t loopcount = 0;
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1);
+    int ms = millis();
+    CRGB c;
+    c.setHSV(loopcount++, 255, 255);
+    clear(c);
+    FastLED.show();
+  }
+
+  server.begin();
 }
 
 template<typename T>
@@ -625,25 +646,74 @@ void drawFrameTime() {
   */
 }
 
+string prevCommand;
+
 void loop() {
   frameTime.update();
   countdown -= frameTime.dt();
   const int modeSwapTime = 300 * 1000;  // Time to change modes in seconds
 
+  WiFiClient client = server.available();
+
+  bool advanceProg = false;
+
+  if (client) {
+    string currentLine;
+    while (client.connected()) {
+      if (client.available()) {
+        char c = client.read();
+        if (c == '\n') {
+          if (currentLine.size() == 0) {
+            client.println("HTTP/1.1 200 OK");
+            client.println("Content-type:text/html");
+            client.println();
+
+            // the content of the HTTP response follows the header:
+            client.print("<a href=\"foo\">foo</a><br>");
+            client.print("<a href=\"bar\">bar</a><br>");
+            client.print(prevCommand.c_str());
+
+            // The HTTP response ends with another blank line:
+            client.println();
+            // break out of the while loop:
+            break;
+          } else {
+            // prevCommand += currentLine;
+            // prevCommand += "<br>\n";
+            currentLine = "";
+          }
+        } else if (c != '\r') {
+          currentLine += c;
+        }
+
+        if (currentLine.find("GET /foo") != string::npos) {
+          advanceProg = true;
+        }
+      }
+    }
+    client.stop();
+  }
+
+
   static int oldNext = HIGH;
   int next = digitalRead(NEXT_PIN);
   if (oldNext == LOW && next == HIGH) {
+    advanceProg = true;
+  }
+  oldNext = next;
+
+  if (advanceProg) {
     countdown = modeSwapTime;
     newProgStartMs = frameTime.t0();
     mode = NEXT_MODE();
   }
-  oldNext = next;
 
   if (countdown < 0) {
     countdown = modeSwapTime;
     mode = RAND_MODE();
     newProgStartMs = frameTime.t0();
   }
+
   switch (mode) {
     case 0:
       rot_y();
