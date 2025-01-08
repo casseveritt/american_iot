@@ -4,8 +4,9 @@
 #include <FastLED.h>
 #include <WiFi.h>
 
-const char* ssid = "anywhere";
-const char* password = "";
+#include "wifi_info.h"
+const char* ssid = WIFI_SSID;
+const char* password = WIFI_PASS;
 
 #include <math.h>
 
@@ -669,8 +670,8 @@ void loop() {
             client.println();
 
             // the content of the HTTP response follows the header:
-            client.print("<a href=\"foo\">foo</a><br>");
-            client.print("<a href=\"bar\">bar</a><br>");
+            client.print("<a href=\"advanceProg\">advance prog</a><br>");
+            client.print("<a href=\"randProg\">random prog</a><br>");
             client.print(prevCommand.c_str());
 
             // The HTTP response ends with another blank line:
@@ -686,8 +687,10 @@ void loop() {
           currentLine += c;
         }
 
-        if (currentLine.find("GET /foo") != string::npos) {
+        if (currentLine.find("GET /advanceProg") != string::npos) {
           advanceProg = true;
+        } else if (currentLine.find("GET /randProg") != string::npos) {
+          countdown = -1;
         }
       }
     }
