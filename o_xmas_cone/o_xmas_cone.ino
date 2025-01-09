@@ -50,8 +50,6 @@ uint32_t newProgStartMs = 0;
 using namespace std;
 using namespace r3;
 
-using Pair = pair<short, short>;
-
 // Tree has 12 "spokes" each with about 90 lights.
 // Each strip has 6 spokes. Even spokes go up from
 // the bottom, odd spokes go down from the top.
@@ -61,22 +59,30 @@ using Pair = pair<short, short>;
 // directions, and meet at adjacent spokes half way around
 // the tree.
 
-vector<Pair> segment = {
-  { 11, 102 },
-  { 193, 101 },
-  { 205, 296 },
+struct Segment {
+  int strip;
+  int begin;
+  int end;
+  bool up;
+  float deg;
+};
 
-  { 387, 295 },
-  { 401, 492 },
-  { 582, 491 },
+vector<Segment> segment = {
+  { 0, 0, 91, true, 0 },
+  { 0, 91, 181, false, 30 },
+  { 0, 181, 271, true, 60 },
 
-  { 628, 719 },
-  { 808, 718 },
-  { 822, 912 },
+  { 0, 271, 361, false, 90 },
+  { 0, 361, 452, true, 120 },
+  { 0, 452, 543, false, 150},
 
-  { 999, 911 },
-  { 1013, 1103 },
-  { 1193, 1102 }
+  { 1, 0, 91, true, 330 },
+  { 1, 91, 181, false, 300 },
+  { 1, 181, 271, true, 270 },
+
+  { 1, 271, 361, false, 240 },
+  { 1, 361, 452, true, 210 },
+  { 1, 452, 543, false, 180 },
 };
 
 struct LedInfo {
@@ -159,19 +165,6 @@ FrameTime frameTime;
 vector<Sphere> spheres;
 uint32_t sparkleDelay[NUM_LEDS];
 uint32_t sparkleTime[NUM_LEDS];
-
-int pixaddr(int index) {
-  if (index >= NUM_LEDS_PER_STRIP) {
-    // second strip runs in the opposite direction from the first
-    return NUM_LEDS - 1 - (index - NUM_LEDS_PER_STRIP);
-  } else {
-    return index;
-  }
-}
-
-CRGB& pix(int index) {
-  return strip[pixaddr(index)];
-}
 
 static CRGB randColor() {
   CRGB c;
@@ -341,7 +334,8 @@ void setup() {
     strip[i] = CRGB::Black;
   }
   for (int j = 0; j < 12; j++) {
-    float theta = (k2pi * j) / 12.0f;
+    auto& seg = segment[j];
+    float theta = ToRadians(seg.deg);
     Rotationf rot(Vec3f(0, 1, 0), -theta);
     float r_top = 0.04f;  // meters
     float r_bot = 0.31f;
@@ -352,18 +346,16 @@ void setup() {
     float stripLen = dir.Length();
     float sinStrip = height / stripLen;
     dir.Normalize();
-    auto& seg = segment[j];
-    float delta = abs(seg.second - seg.first);
-    int incr = (j & 1) ? -1 : 1;
-    for (int i = seg.first; i != seg.second; i += incr) {
+    float delta = abs(seg.begin - seg.end);
+    for (int i = seg.begin; i < seg.end; i++) {
       led.push_back(LedInfo());
       auto& li = led.back();
-      li.index = pixaddr(i);
+      li.index = seg.strip * NUM_LEDS_PER_STRIP + i;
       int eiffelDelay = (rand() % (3000 - 1000 + 1)) + 1000;
       sparkleDelay[li.index] = eiffelDelay;
       sparkleTime[li.index] = (rand() % eiffelDelay + 1);
       auto& p = li.pos;
-      float step = abs(i - seg.first);
+      float step = seg.up ? (i - seg.begin) : (seg.end - 1 - i);
       float frac = step / delta;
       float ledDistAlongStrip = step * metersPerLed;
       p.x = (1.0f - frac) * (r_bot - r_top) + r_top;
@@ -523,10 +515,13 @@ void screw() {
 }
 
 void clear(CRGB color) {
-  for (const auto& li : led) {
-    CRGB& pc = strip[li.index];
-    pc = color;
-    pc.nscale8(16);
+  int i = 0;
+  for (auto seg : segment) {
+    i++;
+    // color.setHSV((i * 20) & 255, 255 * (i & 1), 32);
+    for (int pi = seg.begin; pi < seg.end; pi++) {
+      strip[seg.strip * NUM_LEDS_PER_STRIP + pi] = color;
+    }
   }
 }
 
@@ -606,10 +601,10 @@ void grid() {
 void drawFrameTime() {
   int dt = frameTime.dt();  // Time between frames in ms
 
-  constexpr int beginBarPix = 602;
-  constexpr int endBarPix = 627;
+  constexpr int beginBarPix = NUM_LEDS - 30;
+  constexpr int endBarPix = beginBarPix + 25;
   auto barpix = [](int i) -> CRGB& {
-    return pix(i + beginBarPix);
+    return strip[i + beginBarPix];
   };
 
   auto drawFromBase = [barpix](int base, int dt, int maxPixels, CRGB primary, CRGB secondary) {
@@ -637,14 +632,6 @@ void drawFrameTime() {
   drawFromBase(0, showTime, 4, CRGB::Red, CRGB::Yellow);
   drawFromBase(5, dt - showTime, 8, CRGB::Cyan, CRGB::Magenta);
   drawFromBase(14, dt, 10, CRGB::Blue, CRGB::Green);
-
-  /*
-  for (int i = 0; i < min(10, remainder); i++) {
-    auto& pc = pix(607 + tenMs + 1 - i);
-    pc = ((i % 5) != 4) ? CRGB::Yellow : CRGB::Red;
-    pc.nscale8(4);
-  }
-  */
 }
 
 string prevCommand;
@@ -743,6 +730,7 @@ void loop() {
       perlin_flashing();
       break;
     default:
+      clear(CRGB::Yellow);
       break;
   }
 
