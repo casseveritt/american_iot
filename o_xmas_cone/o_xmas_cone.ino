@@ -18,11 +18,12 @@ const char* password = WIFI_PASS;
 #define LED_PERF_PIN 6
 #define LED0_PIN 7
 #define LED1_PIN 8
+#define LED2_PIN 9
 // Digital pins are addressed by D*
 #define NEXT_PIN 2
 // strip 1 has only 596 after some "adjustments" ...
-#define NUM_LEDS_PER_STRIP 543
-#define NUM_STRIPS 2
+#define NUM_LEDS_PER_STRIP 361
+#define NUM_STRIPS 3
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
 #define NUM_PERF_LEDS 26
 // for mode dev
@@ -74,19 +75,21 @@ struct Segment {
 vector<Segment> segment = {
   { 0, 0, 91, true, 0 },
   { 0, 91, 181, false, 30 },
-  { 0, 181, 271, true, 60 },
 
+  { 0, 181, 271, true, 60 },
   { 0, 271, 361, false, 90 },
-  { 0, 361, 452, true, 120 },
-  { 0, 452, 543, false, 150 },
 
   { 1, 0, 91, true, 330 },
   { 1, 91, 181, false, 300 },
-  { 1, 181, 271, true, 270 },
 
+  { 1, 181, 271, true, 270 },
   { 1, 271, 361, false, 240 },
-  { 1, 361, 452, true, 210 },
-  { 1, 452, 543, false, 180 },
+
+  { 2, 0, 91, true, 120 },
+  { 2, 91, 181, false, 150 },
+
+  { 2, 181, 271, true, 210 },
+  { 2, 271, 361, false, 180 },
 };
 
 struct LedInfo {
@@ -229,6 +232,7 @@ void setup() {
   FastLED.addLeds<WS2812, LED_PERF_PIN, GRB>(perfStrip, NUM_PERF_LEDS);
   FastLED.addLeds<WS2812, LED0_PIN, GRB>(strip, NUM_LEDS_PER_STRIP);
   FastLED.addLeds<WS2812, LED1_PIN, GRB>(strip + NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<WS2812, LED2_PIN, GRB>(strip + 2 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
   FastLED.setBrightness(255);
 
   pinMode(NEXT_PIN, INPUT_PULLUP);
