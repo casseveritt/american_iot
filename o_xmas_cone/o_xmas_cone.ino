@@ -21,10 +21,10 @@ const char* password = WIFI_PASS;
 // Digital pins are addressed by D*
 #define NEXT_PIN 2
 // strip 1 has only 596 after some "adjustments" ...
-#define NUM_LEDS_PER_STRIP 598
+#define NUM_LEDS_PER_STRIP 543
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
-#define NUM_PERF_LEDS 40
+#define NUM_PERF_LEDS 26
 // for mode dev
 // #define FORCE_MODE 0
 
