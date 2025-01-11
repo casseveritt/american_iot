@@ -14,13 +14,17 @@ const char* password = WIFI_PASS;
 #include <deque>
 #include <algorithm>
 
+// LED pins are addressed GPIO pin number
+#define LED_PERF_PIN 6
 #define LED0_PIN 7
 #define LED1_PIN 8
+// Digital pins are addressed by D*
 #define NEXT_PIN 2
 // strip 1 has only 596 after some "adjustments" ...
 #define NUM_LEDS_PER_STRIP 598
 #define NUM_STRIPS 2
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
+#define NUM_PERF_LEDS 40
 // for mode dev
 // #define FORCE_MODE 0
 
@@ -74,7 +78,7 @@ vector<Segment> segment = {
 
   { 0, 271, 361, false, 90 },
   { 0, 361, 452, true, 120 },
-  { 0, 452, 543, false, 150},
+  { 0, 452, 543, false, 150 },
 
   { 1, 0, 91, true, 330 },
   { 1, 91, 181, false, 300 },
@@ -130,6 +134,7 @@ vector<LedInfo> led;
 const CRGB colors[] = { CRGB::Red, CRGB::Green, CRGB::Blue, CRGB::Orange, CRGB::Cyan, CRGB::Magenta, CRGB::Yellow, CRGB::White };
 
 CRGB strip[NUM_LEDS];
+CRGB perfStrip[NUM_PERF_LEDS];
 
 int delayTime = 0;
 
@@ -221,6 +226,7 @@ WiFiServer server(80);
 
 void setup() {
 
+  FastLED.addLeds<WS2812, LED_PERF_PIN, GRB>(perfStrip, NUM_PERF_LEDS);
   FastLED.addLeds<WS2812, LED0_PIN, GRB>(strip, NUM_LEDS_PER_STRIP);
   FastLED.addLeds<WS2812, LED1_PIN, GRB>(strip + NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
   FastLED.setBrightness(255);
@@ -601,37 +607,40 @@ void grid() {
 void drawFrameTime() {
   int dt = frameTime.dt();  // Time between frames in ms
 
-  constexpr int beginBarPix = NUM_LEDS - 30;
-  constexpr int endBarPix = beginBarPix + 25;
-  auto barpix = [](int i) -> CRGB& {
-    return strip[i + beginBarPix];
-  };
+  constexpr int beginBarPix = 0;
+  constexpr int endBarPix = 25;
+  
+  static uint32_t count = 0;
 
-  auto drawFromBase = [barpix](int base, int dt, int maxPixels, CRGB primary, CRGB secondary) {
+  auto drawFromBase = [count](int base, int dt, int maxPixels, CRGB c) {
+    c.nscale8(16);
     int tenMs = dt / 10;      // Number of ms between frames in multiples of 10 rounded down
     int remainder = dt % 10;  // Remainder
     for (int i = 0; i < min(maxPixels, tenMs); i++) {
-      auto& pc = barpix(base + i);
-      pc = ((i % 5) != 4) ? primary : secondary;
-      pc.nscale8(10);
+      perfStrip[base + i] = c;
     }
 
     if (tenMs < maxPixels) {
-      auto& pc = barpix(base + tenMs);
-      pc = ((tenMs % 5) != 4) ? primary : secondary;
-      pc.nscale8(millis() % 10 <= remainder ? 10 : 0);
+      auto& pc = perfStrip[base + tenMs];
+      if ((count % 10) <= remainder) {
+        pc = c;
+      } else {
+        pc = CRGB::Black;
+      }
     }
   };
 
   // clear
   for (int i = 0; i < (endBarPix - beginBarPix); i++) {
-    auto& pc = barpix(i);
+    auto& pc = perfStrip[i];
     pc = CRGB::Black;
   }
 
-  drawFromBase(0, showTime, 4, CRGB::Red, CRGB::Yellow);
-  drawFromBase(5, dt - showTime, 8, CRGB::Cyan, CRGB::Magenta);
-  drawFromBase(14, dt, 10, CRGB::Blue, CRGB::Green);
+  drawFromBase(0, showTime, 4, CRGB::Red);
+  drawFromBase(5, dt - showTime, 8, CRGB::Cyan);
+  drawFromBase(14, dt, 10, CRGB::Blue);
+
+  count++;
 }
 
 string prevCommand;
