@@ -1,6 +1,7 @@
 #include "linear.h"
 #include "perlin.h"
 
+// #define FASTLED_ESP32_I2S
 #include <FastLED.h>
 #include <WiFi.h>
 
@@ -15,17 +16,17 @@ const char* password = WIFI_PASS;
 #include <algorithm>
 
 // LED pins are addressed GPIO pin number
-#define LED_PERF_PIN 6
-#define LED0_PIN 7
-#define LED1_PIN 8
-#define LED2_PIN 9
+#define LED_PERF_PIN 14
+#define LED0_PIN 17
+#define LED1_PIN 18
+#define LED2_PIN 13
 // Digital pins are addressed by D*
 #define NEXT_PIN 2
 // strip 1 has only 596 after some "adjustments" ...
-#define NUM_LEDS_PER_STRIP 361
+#define NUM_LEDS_PER_STRIP 364
 #define NUM_STRIPS 3
 #define NUM_LEDS (NUM_LEDS_PER_STRIP * NUM_STRIPS)
-#define NUM_PERF_LEDS 26
+#define NUM_PERF_LEDS 22
 // for mode dev
 // #define FORCE_MODE 0
 
@@ -88,8 +89,8 @@ vector<Segment> segment = {
   { 2, 0, 91, true, 120 },
   { 2, 91, 181, false, 150 },
 
-  { 2, 181, 271, true, 210 },
-  { 2, 271, 361, false, 180 },
+  { 2, 181, 271, true, 180 },
+  { 2, 271, 363, false, 210 },
 };
 
 struct LedInfo {
@@ -231,7 +232,7 @@ void setup() {
 
   FastLED.addLeds<WS2812, LED_PERF_PIN, GRB>(perfStrip, NUM_PERF_LEDS);
   FastLED.addLeds<WS2812, LED0_PIN, GRB>(strip, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<WS2812, LED1_PIN, GRB>(strip + NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<WS2812, LED1_PIN, GRB>(strip + 1 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
   FastLED.addLeds<WS2812, LED2_PIN, GRB>(strip + 2 * NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
   FastLED.setBrightness(255);
 
@@ -743,7 +744,7 @@ void loop() {
       perlin_flashing();
       break;
     default:
-      clear(CRGB::Yellow);
+      clear(CRGB().setHSV((frameTime.t0() >> 2) & 255, 255, 32));
       break;
   }
 
