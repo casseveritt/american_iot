@@ -7,9 +7,10 @@
 #include <vector>
 
 #include <linear.h>
-using namespace linear;
 
 #include "smi_leds.h"
+
+using namespace r3;
 
 #define NUM_LEDS 296
 #define NUM_STRIPS 16
@@ -87,6 +88,50 @@ int main(int argc, char *argv[]) {
         set_color(pixels, red);
       }
     }
+}
+
+
+int main(int argc, char *argv[])
+{
+    uint8_t buffer[NUM_LEDS * NUM_STRIPS * 3] = {};
+    uint8_t *ptr;
+
+    std::vector<int> strip_indexes = {0, 3, 6, 9, 14};
+
+    // initialize the smi_leds module, starting with a 35% brightness
+    leds_init(NUM_LEDS, 35);
+    printf("compiled for %d strips\n", leds_num_strips());
+
+    int64_t start = get_time();
+    int count = 0;
+    int64_t freecount = 0;
+    for(float t = 0.0;; t += .0001)
+    {
+        // Manually and slowly build the color buffer. 3 bytes per pixel (RGB)
+        // for NUM_LEDS pixels and NUM_STRIPS strips
+        ptr = buffer;
+        for(int strip = 0; strip < NUM_STRIPS; strip++)
+        {
+            float hue = fmod(t + (strip * .04), 1.0);
+            float r, g, b;
+
+            hsv_to_rgb(hue, 1.0, 1.0, &r, &g, &b);
+            for(int led = 0; led < NUM_LEDS; led++)
+            {
+                *(ptr++) = (int)(r * 255);
+                *(ptr++) = (int)(g * 255);
+                *(ptr++) = (int)(b * 255);
+            }
+
+            uint8_t* pixels = buffer + (strip * NUM_LEDS * 3);
+            for (int led = 0; led < strip; led++) {
+                pixels[3 * led + 0] = uint8_t(50);
+                pixels[3 * led + 1] = uint8_t(0);
+                pixels[3 * led + 2] = uint8_t(0);
+            }
+
+        }
+>>>>>>> 14ff478 (tweaks to example)
 
     int sidx = strip_indexes[(freecount / NUM_LEDS) % strip_indexes.size()];
     int pidx = freecount % NUM_LEDS;

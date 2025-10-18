@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
     uint8_t buffer[NUM_LEDS * NUM_STRIPS * 3] = {};
     uint8_t *ptr;
 
-    std::vector<int> strip_indexes = {0, 3, 6, 9, 14};
+    std::vector<int> strip_indexes = {0, 1, 2, 3, 4, 5};
 
     // initialize the smi_leds module, starting with a 35% brightness
     leds_init(NUM_LEDS, 35);
@@ -50,14 +50,14 @@ int main(int argc, char *argv[])
     int64_t start = get_time();
     int count = 0;
     int64_t freecount = 0;
-    for(float t = 0.0;; t += .0001)
+    for(float t = 0.0;; t += .0002)
     {
         // Manually and slowly build the color buffer. 3 bytes per pixel (RGB)
         // for NUM_LEDS pixels and NUM_STRIPS strips
         ptr = buffer;
         for(int strip = 0; strip < NUM_STRIPS; strip++)
         {
-            float hue = fmod(t + (strip * .04), 1.0);
+            float hue = fmod(t + ((strip & (~1)) * .04), 1.0);
             float r, g, b;
 
             hsv_to_rgb(hue, 1.0, 1.0, &r, &g, &b);
