@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
     uint8_t buffer[NUM_LEDS * NUM_STRIPS * 3] = {};
     uint8_t *ptr;
 
-    std::vector<int> strip_indexes = {0, 1, 2, 3, 4, 5};
+    std::vector<int> strip_indexes = {0, 1, 2, 3, 4, 5, 6, 7};
 
     // initialize the smi_leds module, starting with a 35% brightness
     leds_init(NUM_LEDS, 296);
