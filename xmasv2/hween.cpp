@@ -86,7 +86,6 @@ int main(int argc, char *argv[]) {
         set_color(pixels, red);
       }
     }
-  }
 
   int sidx = strip_indexes[(freecount / NUM_LEDS) % strip_indexes.size()];
   int pidx = freecount % NUM_LEDS;
@@ -111,4 +110,5 @@ int main(int argc, char *argv[]) {
     start = end;
     count = 0;
   }
+}
 }
