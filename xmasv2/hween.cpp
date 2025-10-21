@@ -14,7 +14,7 @@
 using namespace r3;
 
 #define STRIPS 16
-#define PIXELS_PER_STRIP 296
+#define PIXELS_PER_STRIP 320 
 
 #define LED_BRIGHTNESS 16
 
@@ -60,9 +60,6 @@ std::vector<PixInfo> get_pix_info()
         int half_branch_length = branchLen[i] / 2;
         for (int j = 0; j < BRANCHES_PER_RING; j++)
         {
-	    if (j != 2) {
-		    continue;
-	    }
             int branch_in_strip = j % branchesPerStrip[i];
             int index_in_strip = branch_in_strip * branchLen[i];
             int strip_in_ring = j / branchesPerStrip[i];
@@ -226,7 +223,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        if (freecount > 2000)
+        if (freecount > 0)
         {
             for (auto p : pixInfo)
             {
