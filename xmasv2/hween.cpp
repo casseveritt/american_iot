@@ -4,8 +4,8 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include "smi_leds.h"
 
@@ -14,7 +14,7 @@
 using namespace r3;
 
 #define STRIPS 16
-#define PIXELS_PER_STRIP 320 
+#define PIXELS_PER_STRIP 320
 
 #define LED_BRIGHTNESS 16
 
@@ -52,11 +52,15 @@ std::vector<PixInfo> get_pix_info()
     for (int i = 1; i < RINGS; i++)
     {
         indexAtRing[i] = indexAtRing[i - 1] + PIXELS_PER_STRIP * (BRANCHES_PER_RING / branchesPerStrip[i - 1]);
-	printf("indexAtRing[%d] = %d\n", i, indexAtRing[i]);
+        printf("indexAtRing[%d] = %d\n", i, indexAtRing[i]);
     }
 
     for (int i = 0; i < RINGS; i++)
     {
+        if (i != 1)
+        {
+            continue;
+        }
         int half_branch_length = branchLen[i] / 2;
         for (int j = 0; j < BRANCHES_PER_RING; j++)
         {
@@ -94,7 +98,6 @@ std::vector<PixInfo> get_pix_info()
             }
         }
     }
-
 
     return pi;
 }
