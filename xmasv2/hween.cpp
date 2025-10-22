@@ -33,9 +33,19 @@ int main(int argc, char *argv[]) {
   int64_t start = get_time_nsec();
   int count = 0;
   int64_t freecount = 0;
-  for (float t = 0.0;; t += .0001) {
+  for (float t = 0.0;; t += .001) {
     uint64_t t_ns = get_time_nsec();
 
+    if (freecount > 0) {
+      for (auto p : pixInfo) {
+	float theta = atan2(p.position.z, p.position.x) + M_PI;
+	Vec3f rgb = rgb_from_hsv(Vec3f(fmod(t + theta / (M_PI * 2.0f), 1.0), 1.0, 1.0));
+        set_color(buffer, p.index, rgb);
+      }
+    }
+
+#define SHOW_STRIP_INDEX 0
+#if SHOW_STRIP_INDEX
     Vec3f red(0.2f, 0, 0);
     for (int strip = 0; strip < STRIPS; strip++) {
       uint8_t *pixels = buffer + (strip * PIXELS_PER_STRIP * 3);
@@ -43,12 +53,7 @@ int main(int argc, char *argv[]) {
         set_color(buffer, strip * PIXELS_PER_STRIP + led, red);
       }
     }
-
-    if (freecount > 0) {
-      for (auto p : pixInfo) {
-        set_color(buffer, p.index, Vec3f(0, 0.25, 0));
-      }
-    }
+#endif
 
     // Send the buffer to the SMI buffer
     leds_set(buffer);
@@ -65,5 +70,6 @@ int main(int argc, char *argv[]) {
       start = end;
       count = 0;
     }
+    usleep(700);
   }
 }

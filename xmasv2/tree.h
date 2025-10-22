@@ -48,9 +48,6 @@ inline std::vector<PixInfo> get_pix_info() {
   }
 
   for (int i = 0; i < RINGS; i++) {
-    if (i != 1) {
-      continue;
-    }
     int half_branch_length = branchLen[i] / 2;
     for (int j = 0; j < BRANCHES_PER_RING; j++) {
       int branch_in_strip = j % branchesPerStrip[i];
@@ -58,7 +55,13 @@ inline std::vector<PixInfo> get_pix_info() {
       int strip_in_ring = j / branchesPerStrip[i];
       int index =
           indexAtRing[i] + strip_in_ring * PIXELS_PER_STRIP + index_in_strip;
+
       float angle = (j * (2.0 * M_PI)) / BRANCHES_PER_RING;
+
+      if (i & 1) {
+	  angle -= M_PI / BRANCHES_PER_RING;
+      }
+
       float branch_height = // in meters
           +0.6096           // height of first branch at trunk
           + i * 0.1778;     // branch spacing
