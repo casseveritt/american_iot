@@ -57,10 +57,6 @@ std::vector<PixInfo> get_pix_info()
 
     for (int i = 0; i < RINGS; i++)
     {
-        if (i != 1)
-        {
-            continue;
-        }
         int half_branch_length = branchLen[i] / 2;
         for (int j = 0; j < BRANCHES_PER_RING; j++)
         {
@@ -174,37 +170,14 @@ int main(int argc, char *argv[])
     for (float t = 0.0;; t += .0001)
     {
         uint64_t t_ns = get_time();
-        // Manually and slowly build the color buffer. 3 bytes per pixel (RGB)
-        // for PIXELS_PER_STRIP pixels and STRIPS strips
-        ptr = buffer;
-        for (int strip = 0; strip < STRIPS; strip++)
+        if (freecount > 0)
         {
-            float hue = fmod(t + (strip * .04), 1.0);
-
-            Vec3f orange(1.0, 0.15, 0.0);
-
-            Vec3f rgb = rgb_from_hsv(Vec3f(hue, 1.0, 1.0));
-
-            for (int led = 0; led < PIXELS_PER_STRIP; led++)
+            for (auto p : pixInfo)
             {
-                set_color(ptr, orange);
+                set_color(buffer, p.index, Vec3f(0, 0.25, 0));
             }
         }
 
-        for (int j = 0; j < RINGS * BRANCHES_PER_RING / 2; j++)
-        {
-            for (int i = 0; i < branchLen[0]; i++)
-            {
-                uint64_t fc = (t_ns / 20000000) + i + j * branchLen[0] * 2;
-                int sidx = strip_indexes[(fc / PIXELS_PER_STRIP) % strip_indexes.size()];
-                int pidx = fc % PIXELS_PER_STRIP;
-                Vec3f purple(0.05, 0, 0.05);
-                ptr = buffer + (sidx * PIXELS_PER_STRIP + pidx) * 3;
-                set_color(ptr, purple);
-            }
-        }
-
-        Vec3f blk(0, 0, 0);
         for (int strip = 0; strip < STRIPS; strip++)
         {
             uint8_t *pixels = buffer + (strip * PIXELS_PER_STRIP * 3);
@@ -212,25 +185,6 @@ int main(int argc, char *argv[])
             for (int led = 0; led < strip; led++)
             {
                 set_color(pixels, red);
-            }
-
-            for (int b = 0; false && b < 4; b++)
-            {
-                pixels = buffer + ((strip * PIXELS_PER_STRIP + b * 74) * 3);
-                int ring = strip / 2;
-                for (int i = 0; i < ring * 4; i++)
-                {
-                    set_color(pixels, 37 + i, blk);
-                    set_color(pixels, 36 - i, blk);
-                }
-            }
-        }
-
-        if (freecount > 0)
-        {
-            for (auto p : pixInfo)
-            {
-                set_color(buffer, p.index, Vec3f(0, 0.25, 0));
             }
         }
 
@@ -250,5 +204,6 @@ int main(int argc, char *argv[])
             start = end;
             count = 0;
         }
+	usleep(800);
     }
 }
