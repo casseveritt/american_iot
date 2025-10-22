@@ -9,6 +9,7 @@
 
 #include "smi_leds.h"
 
+#include "color.h"
 #include "hsv.h"
 #include "linear.h"
 #include "time.h"

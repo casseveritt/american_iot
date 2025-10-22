@@ -70,7 +70,7 @@ inline std::vector<PixInfo> get_pix_info() {
         float y = k * PIXEL_SPACING * sin(BRANCH_PITCH) + branch_height;
         PixInfo pix;
         pix.index = index + k;
-        pix.position = Vec3f(cos(angle) * x, y, sin(angle) * x);
+        pix.position = r3::Vec3f(cos(angle) * x, y, sin(angle) * x);
         pix.outside = true;
         pi.push_back(pix);
       }
@@ -80,7 +80,7 @@ inline std::vector<PixInfo> get_pix_info() {
         float y = k * PIXEL_SPACING * sin(BRANCH_PITCH) + branch_height;
         PixInfo pix;
         pix.index = index + half_branch_length + (half_branch_length - 1 - k);
-        pix.position = Vec3f(cos(angle) * x, y, sin(angle) * x);
+        pix.position = r3::Vec3f(cos(angle) * x, y, sin(angle) * x);
         pix.outside = false;
         pi.push_back(pix);
       }
