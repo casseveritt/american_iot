@@ -46,8 +46,12 @@ int main(int argc, char *argv[])
                 Vec3f rgb = rgb_from_hsv(Vec3f(fmod(t + theta / (M_PI * 2.0f), 1.0), 1.0, 1.0));
                 if (fmod(p.position.y + 0.1 * t_ns * 1e-9, 0.2f) < 0.1f)
                 {
-                    rgb *= 0.2f;
+                    // rgb *= 0.2f;
                 }
+		float r = (p.position - Vec3f(0.0, 1.0, 0.0)).Length() + 0.7 * t_ns * 1e-9;
+		if (fmod(r, 0.2f) < 0.1f) {
+		    rgb *= 0.2f;
+		}
                 set_color(buffer, p.index, rgb);
             }
         }
