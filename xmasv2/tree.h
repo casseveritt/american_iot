@@ -69,7 +69,7 @@ inline std::vector<PixInfo> get_pix_info() {
       size_t branch_start = pi.size();
       // down the branch on the outside
       for (int k = 0; k < half_branch_length; k++) {
-        float x = k * PIXEL_SPACING * cos(BRANCH_PITCH);
+        float x = k * PIXEL_SPACING * cos(BRANCH_PITCH) + 0.02;
         float y = k * PIXEL_SPACING * sin(BRANCH_PITCH) + branch_height;
         PixInfo pix;
         pix.index = index + k;
@@ -79,7 +79,7 @@ inline std::vector<PixInfo> get_pix_info() {
       }
       // back up the branch on the inside
       for (int k = half_branch_length - 1; k >= 0; k--) {
-        float x = k * PIXEL_SPACING * cos(BRANCH_PITCH);
+        float x = k * PIXEL_SPACING * cos(BRANCH_PITCH) + 0.02;
         float y = k * PIXEL_SPACING * sin(BRANCH_PITCH) + branch_height;
         PixInfo pix;
         pix.index = index + half_branch_length + (half_branch_length - 1 - k);

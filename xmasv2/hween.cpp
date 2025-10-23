@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
   int64_t start = get_time_nsec();
   int count = 0;
   int64_t freecount = 0;
-  for (float t = 0.0;; t += .001) {
+  for (float t = 0.0;; t += .004) {
     uint64_t t_ns = get_time_nsec();
 
     if (freecount > 0) {
