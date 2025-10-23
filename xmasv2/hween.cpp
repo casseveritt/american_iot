@@ -37,23 +37,15 @@ int main(int argc, char *argv[])
     for (float t = 0.0;; t += .004)
     {
         uint64_t t_ns = get_time_nsec();
+        float t_s = t_ns * 1e-9;
 
-        if (freecount > 0)
+        for (auto p : pixInfo)
         {
-            for (auto p : pixInfo)
-            {
-                float theta = atan2(p.position.z, p.position.x) + M_PI;
-                Vec3f rgb = rgb_from_hsv(Vec3f(fmod(t + theta / (M_PI * 2.0f), 1.0), 1.0, 1.0));
-                if (fmod(p.position.y + 0.1 * t_ns * 1e-9, 0.2f) < 0.1f)
-                {
-                    // rgb *= 0.2f;
-                }
-		float r = (p.position - Vec3f(0.0, 1.0, 0.0)).Length() + 0.7 * t_ns * 1e-9;
-		if (fmod(r, 0.2f) < 0.1f) {
-		    rgb *= 0.2f;
-		}
-                set_color(buffer, p.index, rgb);
-            }
+            float theta = atan2(p.position.z, p.position.x) + M_PI;
+            Vec3f rgb = rgb_from_hsv(Vec3f(fmod(t + theta / (M_PI * 2.0f), 1.0), 1.0, 1.0));
+            float sc = pow(fabs(fmod(p.position.y + 0.3 * t_s, 0.2f) - 0.1) * 10.0f, 3.0);
+            rgb *= sc;
+            set_color(buffer, p.index, rgb);
         }
 
 #define SHOW_STRIP_INDEX 0
@@ -85,6 +77,6 @@ int main(int argc, char *argv[])
             start = end;
             count = 0;
         }
-        usleep(700);
+        usleep(5000);
     }
 }
