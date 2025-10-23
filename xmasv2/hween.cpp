@@ -4,6 +4,8 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+
+#include <span>
 #include <unordered_map>
 #include <vector>
 
@@ -14,6 +16,8 @@
 #include "linear.h"
 #include "time.h"
 #include "tree.h"
+
+#define NUM_BUFFERS 10
 
 using namespace r3;
 
@@ -45,7 +49,7 @@ void show_strip_index(uint8_t *buffer)
 int main(int argc, char *argv[])
 {
     constexpr size_t sz = PIXELS_PER_STRIP * STRIPS * 3;
-    uint8_t buffers[3][sz] = {};
+    uint8_t buffers[NUM_BUFFERS][sz] = {};
 
     auto pixInfo = get_pix_info();
 
@@ -63,7 +67,7 @@ int main(int argc, char *argv[])
         uint64_t t_ns = get_time_nsec();
         float t_s = t_ns * 1e-9;
 
-        uint8_t *buffer = buffers[freecount % 3];
+        uint8_t *buffer = buffers[freecount % NUM_BUFFERS];
 
         color_pixels(pixInfo, buffer, t_s);
 
