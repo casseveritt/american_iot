@@ -49,6 +49,10 @@ std::deque<Work> workQueue;
 
 std::mutex workMutex;
 
+int work_size() {
+	return int(workQueue.size());
+}
+
 void push_work(const Work &work)
 {
     std::scoped_lock lock(workMutex);
@@ -156,11 +160,8 @@ int main(int argc, char *argv[])
 
     leds_clear();
 
-    std::deque<float> job_times;
-
     int64_t start = get_time_nsec();
-    int count = 0;
-    int64_t freecount = 0;
+    int64_t count = 0;
 
     std::thread t1(worker, 1);
     std::thread t2(worker, 2);
@@ -170,14 +171,15 @@ int main(int argc, char *argv[])
         uint64_t t_ns = get_time_nsec();
         float t_s = t_ns * 1e-9;
 
-        uint8_t *buffer = buffers[freecount % NUM_BUFFERS];
+        uint8_t *buffer = buffers[count % NUM_BUFFERS];
 
         Work w = {color_pixels, pixInfo, buffer, t_s};
 
-        job_times.push_back(t_s);
         push_work(w);
 
-        if (job_times.size() < NUM_BUFFERS)
+	int jobs = work_size();
+
+        if (jobs < NUM_BUFFERS)
         {
             usleep(1000);
             continue;
@@ -189,11 +191,9 @@ int main(int argc, char *argv[])
             if (w)
             {
                 buffer = w.value().buffer;
-		job_times.pop_front();
                 break;
             } 
-	    usleep(1000);
-
+	    usleep(100);
         } while (true);
 
         // show_strip_index(buffer);
@@ -205,15 +205,12 @@ int main(int argc, char *argv[])
         leds_send();
 
         count++;
-        freecount++;
-        if (count > 1000)
+        if ((count % 1000) == 999)
         {
             int64_t end = get_time_nsec();
             double delta = (end - start) * 1e-9;
             printf("fps = %d\n", int(1000 / delta));
             start = end;
-            count = 0;
         }
-        usleep(800);
     }
 }
