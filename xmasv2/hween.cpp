@@ -5,7 +5,11 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <deque>
+#include <mutex>
+#include <optional>
 #include <span>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -17,9 +21,79 @@
 #include "time.h"
 #include "tree.h"
 
-#define NUM_BUFFERS 10
+#define NUM_BUFFERS 3
 
 using namespace r3;
+
+typedef void (*PixelFunc)(std::span<PixInfo> pixInfo, uint8_t *buffer, float t_s);
+
+bool terminate = false;
+
+enum Status
+{
+    Waiting,
+    Processing,
+    Done
+};
+
+struct Work
+{
+    PixelFunc pixelFunc;
+    std::span<PixInfo> pixInfo;
+    uint8_t *buffer;
+    float t_s;
+    Status status = Waiting;
+};
+
+std::deque<Work> workQueue;
+
+std::mutex workMutex;
+
+void push_work(const Work &work)
+{
+    std::scoped_lock(workMutex);
+    workQueue.push_back(work);
+}
+
+std::optional<Work> pop_work()
+{
+    std::scoped_lock(workMutex);
+    if (workQueue.size() == 0)
+    {
+        return {};
+    }
+    auto work = workQueue.front();
+    //printf("pop_work() status = %d\n", int(work.status));
+    if (work.status != Done)
+    {
+        return {};
+    }
+    workQueue.pop_front();
+    return work;
+}
+
+std::optional<Work *> fetch_work()
+{
+    std::scoped_lock(workMutex);
+    if (workQueue.size() == 0)
+    {
+        return {};
+    }
+    for (auto& w : workQueue) {
+        if (w.status == Waiting)
+        {
+            w.status = Processing;
+            return &w;
+        }
+    }
+    return {};
+}
+
+void mark_work_done(Work *w)
+{
+    std::scoped_lock(workMutex);
+    w->status = Done;
+}
 
 void color_pixels(std::span<PixInfo> pixInfo, uint8_t *buffer, float t)
 {
@@ -49,6 +123,26 @@ void show_strip_index(uint8_t *buffer)
     }
 }
 
+void worker(int id)
+{
+    printf("Starting worker %d\n", id);
+    while (terminate == false)
+    {
+        std::optional<Work *> work = fetch_work();
+        if (work)
+        {
+            auto &w = *work.value();
+            w.pixelFunc(w.pixInfo, w.buffer, w.t_s);
+            w.status = Done;
+            mark_work_done(&w);
+        }
+        else
+        {
+            usleep(100);
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
     constexpr size_t sz = PIXELS_PER_STRIP * STRIPS * 3;
@@ -62,9 +156,14 @@ int main(int argc, char *argv[])
 
     leds_clear();
 
+    std::deque<float> job_times;
+
     int64_t start = get_time_nsec();
     int count = 0;
     int64_t freecount = 0;
+
+    std::thread t1(worker, 1);
+    //std::thread t2(worker, 2);
     while (true)
     {
         uint64_t t_ns = get_time_nsec();
@@ -72,7 +171,29 @@ int main(int argc, char *argv[])
 
         uint8_t *buffer = buffers[freecount % NUM_BUFFERS];
 
-        color_pixels(pixInfo, buffer, t_s);
+        Work w = {color_pixels, pixInfo, buffer, t_s};
+
+        job_times.push_back(t_s);
+        push_work(w);
+
+        if (job_times.size() > NUM_BUFFERS)
+        {
+            usleep(1000);
+            continue;
+        }
+
+        do
+        {
+            auto w = pop_work();
+            if (w)
+            {
+                buffer = w.value().buffer;
+		job_times.pop_front();
+                break;
+            } 
+	    usleep(500);
+
+        } while (true);
 
         // show_strip_index(buffer);
 
