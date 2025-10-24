@@ -163,7 +163,8 @@ int main(int argc, char *argv[])
     int64_t freecount = 0;
 
     std::thread t1(worker, 1);
-    //std::thread t2(worker, 2);
+    std::thread t2(worker, 2);
+    std::thread t3(worker, 3);
     while (true)
     {
         uint64_t t_ns = get_time_nsec();
@@ -176,7 +177,7 @@ int main(int argc, char *argv[])
         job_times.push_back(t_s);
         push_work(w);
 
-        if (job_times.size() > NUM_BUFFERS)
+        if (job_times.size() < NUM_BUFFERS)
         {
             usleep(1000);
             continue;
@@ -191,7 +192,7 @@ int main(int argc, char *argv[])
 		job_times.pop_front();
                 break;
             } 
-	    usleep(500);
+	    usleep(1000);
 
         } while (true);
 
