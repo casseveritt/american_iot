@@ -51,13 +51,13 @@ std::mutex workMutex;
 
 void push_work(const Work &work)
 {
-    std::scoped_lock(workMutex);
+    std::scoped_lock lock(workMutex);
     workQueue.push_back(work);
 }
 
 std::optional<Work> pop_work()
 {
-    std::scoped_lock(workMutex);
+    std::scoped_lock lock(workMutex);
     if (workQueue.size() == 0)
     {
         return {};
@@ -74,7 +74,7 @@ std::optional<Work> pop_work()
 
 std::optional<Work *> fetch_work()
 {
-    std::scoped_lock(workMutex);
+    std::scoped_lock lock(workMutex);
     if (workQueue.size() == 0)
     {
         return {};
@@ -91,7 +91,7 @@ std::optional<Work *> fetch_work()
 
 void mark_work_done(Work *w)
 {
-    std::scoped_lock(workMutex);
+    std::scoped_lock lock(workMutex);
     w->status = Done;
 }
 

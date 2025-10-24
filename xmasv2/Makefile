@@ -1,8 +1,8 @@
 
 all: hween
 
-hween: hween.cpp tree.h color.h 
-	g++ -std=c++20 hween.cpp -L ~/src/smi_leds/build -lsmi_leds -I ~/src/smi_leds/include -o hween -O3
+hween: hween.cpp tree.h color.h Makefile
+	g++ -std=c++20 hween.cpp -L ~/src/smi_leds/build -lsmi_leds -I ~/src/smi_leds/include -o hween -g
 
 format:
 	clang-format -i hween.cpp
