@@ -18,6 +18,7 @@
 #include "color.h"
 #include "hsv.h"
 #include "linear.h"
+#include "perlin.h"
 #include "time.h"
 #include "tree.h"
 
@@ -49,8 +50,9 @@ std::deque<Work> workQueue;
 
 std::mutex workMutex;
 
-int work_size() {
-	return int(workQueue.size());
+int work_size()
+{
+    return int(workQueue.size());
 }
 
 void push_work(const Work &work)
@@ -67,7 +69,7 @@ std::optional<Work> pop_work()
         return {};
     }
     auto work = workQueue.front();
-    //printf("pop_work() status = %d\n", int(work.status));
+    // printf("pop_work() status = %d\n", int(work.status));
     if (work.status != Done)
     {
         return {};
@@ -83,7 +85,8 @@ std::optional<Work *> fetch_work()
     {
         return {};
     }
-    for (auto& w : workQueue) {
+    for (auto &w : workQueue)
+    {
         if (w.status == Waiting)
         {
             w.status = Processing;
@@ -114,6 +117,17 @@ void color_pixels(std::span<PixInfo> pixInfo, uint8_t *buffer, float t)
     }
 }
 
+void noise_pixels(std::span<PixInfo> pixInfo, uint8_t *buffer, float t)
+{
+    for (auto p : pixInfo)
+    {
+	Vec3f pp = p.position * 15;
+        float noise = 0.5f + 0.5f * ImprovedNoise::noise(pp.x, pp.y + t, pp.z);
+	noise = pow(noise, 2.0);
+        Vec3f n(noise, noise, noise);
+        set_color(buffer, p.index, n);
+    }
+}
 void show_strip_index(uint8_t *buffer)
 {
     for (int strip = 0; strip < STRIPS; strip++)
@@ -173,11 +187,11 @@ int main(int argc, char *argv[])
 
         uint8_t *buffer = buffers[count % NUM_BUFFERS];
 
-        Work w = {color_pixels, pixInfo, buffer, t_s};
+        Work w = {noise_pixels, pixInfo, buffer, t_s};
 
         push_work(w);
 
-	int jobs = work_size();
+        int jobs = work_size();
 
         if (jobs < NUM_BUFFERS)
         {
@@ -192,8 +206,8 @@ int main(int argc, char *argv[])
             {
                 buffer = w.value().buffer;
                 break;
-            } 
-	    usleep(100);
+            }
+            usleep(100);
         } while (true);
 
         // show_strip_index(buffer);
