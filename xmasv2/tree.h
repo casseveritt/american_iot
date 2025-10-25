@@ -25,6 +25,8 @@ constexpr uint32_t branchLen[RINGS] = {74, 74, 74, 74, 56, 38, 38, 20};
 constexpr uint32_t branchesPerStrip[RINGS] = {4, 4, 4, 4, 4, 8, 8, 8};
 constexpr float branchHeightAtTrunkInches[RINGS] = {23.5, 30.5, 38, 47, 54, 61, 67.5, 74.5};
 
+constexpr int phys_strip_index[] = { 0, 1, 2, 3, 4, 5, 13, 7, 8, 9, 10, 11, 12, 15, 15, 15 };
+
 struct PixInfo
 {
     uint32_t index;
@@ -42,12 +44,11 @@ inline std::vector<PixInfo> get_pix_info()
     std::vector<PixInfo> pi;
     pi.reserve(pixels);
     int ring_start_index = 0;
-    int indexAtRing[RINGS] = {};
+    int logicalStripAtRing[RINGS] = {};
 
     for (int i = 1; i < RINGS; i++)
     {
-        indexAtRing[i] = indexAtRing[i - 1] + PIXELS_PER_STRIP * (BRANCHES_PER_RING / branchesPerStrip[i - 1]);
-        printf("indexAtRing[%d] = %d\n", i, indexAtRing[i]);
+        logicalStripAtRing[i] = logicalStripAtRing[i - 1] +  (BRANCHES_PER_RING / branchesPerStrip[i - 1]);
     }
 
     for (int i = 0; i < RINGS; i++)
@@ -58,7 +59,9 @@ inline std::vector<PixInfo> get_pix_info()
             int branch_in_strip = j % branchesPerStrip[i];
             int index_in_strip = branch_in_strip * branchLen[i];
             int strip_in_ring = j / branchesPerStrip[i];
-            int index = indexAtRing[i] + strip_in_ring * PIXELS_PER_STRIP + index_in_strip;
+            int logical_strip = logicalStripAtRing[i] + strip_in_ring;
+            int phys_strip = phys_strip_index[logical_strip];
+            int index = phys_strip * PIXELS_PER_STRIP + index_in_strip;
 
             float angle = (j * (2.0 * M_PI)) / BRANCHES_PER_RING;
 

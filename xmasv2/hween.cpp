@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
         {
             int64_t end = get_time_nsec();
             double delta = (end - start) * 1e-9;
-            printf("fps = %d\n", int(1000 / delta));
+            printf("fps = %d, t_s = %.1f, epoch = %lld\n", int(1000 / delta), t_s, epoch / 1000);
             start = end;
         }
 	usleep(1000);
