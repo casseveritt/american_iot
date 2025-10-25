@@ -124,8 +124,8 @@ void noise_pixels(std::span<PixInfo> pixInfo, uint8_t *buffer, float t)
 {
     for (auto p : pixInfo)
     {
-        Vec3f pp = p.position * 15;
-        float noise = 0.5f + 0.5f * ImprovedNoise::noise(pp.x, pp.y + t, pp.z);
+        Vec3f pp = p.position * 100;
+        float noise = 0.5f + 0.5f * ImprovedNoise::noise(pp.x, pp.y + t * 0.1, pp.z);
         auto c = blueBlack.lookupClamped(noise);
         set_color(buffer, p.index, c);
     }
@@ -165,9 +165,13 @@ void worker(int id)
 
 void init()
 {
-    blueBlack.addColor(BLUE * 16 / 255.0f);
-    blueBlack.addColor(BLUE * 16 / 255.0f);
-    blueBlack.addColor(CYAN * 64 / 255.0f);
+    blueBlack.addColor(BLUE * 0.25f);
+    blueBlack.addColor(BLUE * 0.25f);
+    blueBlack.addColor(CYAN);
+    blueBlack.addColor(BLUE * 0.25f);
+    blueBlack.addColor(BLUE * 0.25f);
+    blueBlack.addColor(BLACK);
+    blueBlack.addColor(BLACK);
     blueBlack.addColor(BLACK);
     blueBlack.addColor(BLACK);
     blueBlack.addColor(BLACK);
@@ -183,7 +187,7 @@ int main(int argc, char *argv[])
     auto pixInfo = get_pix_info();
 
     // initialize the smi_leds module, starting with a 35% brightness
-    leds_init(PIXELS_PER_STRIP, LED_BRIGHTNESS);
+    leds_init(PIXELS_PER_STRIP, 50);
     printf("compiled for %d strips\n", leds_num_strips());
 
     leds_clear();
@@ -240,5 +244,6 @@ int main(int argc, char *argv[])
             printf("fps = %d\n", int(1000 / delta));
             start = end;
         }
+	usleep(1000);
     }
 }
