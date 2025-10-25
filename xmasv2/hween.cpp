@@ -124,8 +124,8 @@ void noise_pixels(std::span<PixInfo> pixInfo, uint8_t *buffer, float t)
 {
     for (auto p : pixInfo)
     {
-        Vec3f pp = p.position * 100;
-        float noise = 0.5f + 0.5f * ImprovedNoise::noise(pp.x, pp.y + t * 0.1, pp.z);
+        Vec3f pp = p.position * 20;
+        float noise = 0.5f + 0.5f * ImprovedNoise::noise(pp.x, pp.y + t * 0.5, pp.z);
         auto c = blueBlack.lookupClamped(noise);
         set_color(buffer, p.index, c);
     }
@@ -192,15 +192,16 @@ int main(int argc, char *argv[])
 
     leds_clear();
 
-    int64_t start = get_time_nsec();
+    int64_t epoch = get_time_nsec();
+    int64_t start = epoch;
     int64_t count = 0;
 
     std::thread t1(worker, 1);
     std::thread t2(worker, 2);
-    std::thread t3(worker, 3);
+    //std::thread t3(worker, 3);
     while (true)
     {
-        uint64_t t_ns = get_time_nsec();
+        uint64_t t_ns = get_time_nsec() - epoch;
         float t_s = t_ns * 1e-9;
 
         uint8_t *buffer = buffers[count % NUM_BUFFERS];
