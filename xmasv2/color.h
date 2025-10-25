@@ -11,12 +11,17 @@ inline void set_color(uint8_t *ptr, int idx, const r3::Vec3f &color)
     p[2] = (uint8_t)(color.z * 255);
 }
 
-struct Color : public Vec3f
+struct Color : public r3::Vec3f
 {
-    Color() : Vec3f(0, 0, 0)
+    Color() : r3::Vec3f(0, 0, 0)
     {
     }
-    Color(float r, float g, float b) : Vec3f(r, g, b)
+
+    Color(const r3::Vec3f &v) : r3::Vec3f(v)
+    {
+    }
+
+    Color(float r, float g, float b) : r3::Vec3f(r, g, b)
     {
     }
 

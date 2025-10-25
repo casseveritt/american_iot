@@ -23,21 +23,20 @@ struct ColorMap
 
     Color lookupClamped(float t) const
     {
-        const float ts = t * cm.size() - 1;
-        const float ts = std::clamp(t * cm.size(), 0.5, cm.size() - 0.5f) - 0.5f;
-        const int ti = ts;
+        const float ts = std::clamp(t * cm.size(), 0.5f, cm.size() - 0.5f) - 0.5f;
+        const int ti = std::clamp(int(ts), 0, int(cm.size()) - 1);
         const float tfr = ts - ti;
-        return cm[ti].lerp(cm[std::min(cm.size() - 1, ti + 1)], tfr);
+        return cm[ti].lerp(cm[std::min(int(cm.size()) - 1, ti + 1)], tfr);
     }
 
-    Vec3f lookupNearest(float t) const
+    r3::Vec3f lookupNearest(float t) const
     {
         const float ts = t * cm.size();
-        const int ti = clamp(int(ts + 0.5f), 0, int(cm.size() - 1));
+        const int ti = std::clamp(int(ts + 0.5f), 0, int(cm.size() - 1));
         return cm[ti];
     }
 
-    Vec3f lookupWrapped(float t) const
+    r3::Vec3f lookupWrapped(float t) const
     {
         t = t - floor(t);
         const float ts = t * cm.size() + cm.size() - 0.5f;

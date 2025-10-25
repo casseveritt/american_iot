@@ -15,6 +15,7 @@
 
 #include "smi_leds.h"
 
+#include "cmap.h"
 #include "color.h"
 #include "hsv.h"
 #include "linear.h"
@@ -25,6 +26,8 @@
 #define NUM_BUFFERS 3
 
 using namespace r3;
+
+ColorMap blueBlack;
 
 typedef void (*PixelFunc)(std::span<PixInfo> pixInfo, uint8_t *buffer, float t_s);
 
@@ -121,11 +124,10 @@ void noise_pixels(std::span<PixInfo> pixInfo, uint8_t *buffer, float t)
 {
     for (auto p : pixInfo)
     {
-	Vec3f pp = p.position * 15;
+        Vec3f pp = p.position * 15;
         float noise = 0.5f + 0.5f * ImprovedNoise::noise(pp.x, pp.y + t, pp.z);
-	noise = pow(noise, 2.0);
-        Vec3f n(noise, noise, noise);
-        set_color(buffer, p.index, n);
+        auto c = blueBlack.lookupClamped(noise);
+        set_color(buffer, p.index, c);
     }
 }
 void show_strip_index(uint8_t *buffer)
@@ -161,10 +163,22 @@ void worker(int id)
     }
 }
 
+void init()
+{
+    blueBlack.addColor(BLUE * 16 / 255.0f);
+    blueBlack.addColor(BLUE * 16 / 255.0f);
+    blueBlack.addColor(CYAN * 64 / 255.0f);
+    blueBlack.addColor(BLACK);
+    blueBlack.addColor(BLACK);
+    blueBlack.addColor(BLACK);
+}
+
 int main(int argc, char *argv[])
 {
     constexpr size_t sz = PIXELS_PER_STRIP * STRIPS * 3;
     uint8_t buffers[NUM_BUFFERS][sz] = {};
+
+    init();
 
     auto pixInfo = get_pix_info();
 

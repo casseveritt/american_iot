@@ -9,6 +9,12 @@ perlin.o:
 
 format:
 	clang-format -i hween.cpp
+	clang-format -i cmap.h
+	clang-format -i color.h
+	clang-format -i tree.h
+	clang-format -i perlin.cpp
+	clang-format -i perlin.h
+
 
 clean:
 	rm -f hween
