@@ -30,23 +30,34 @@ Diagnostics:
       
       # Readability checks that are subjective
       - readability-redundant-preprocessor
+      - readability-math-missing-parentheses
       - readability-magic-numbers
       - readability-function-cognitive-complexity
       - readability-identifier-length
       - readability-uppercase-literal-suffix
       - readability-else-after-return
+      - readability-static-accessed-through-instance
+      - readability-implicit-bool-conversion
       
       # Performance checks that may not be relevant
       - performance-avoid-endl
+      - performance-enum-size
       
       # Bugprone checks that are often false positives
       - bugprone-easily-swappable-parameters
       - bugprone-exception-escape
+      - bugprone-narrowing-conversions
+      - bugprone-implicit-widening-of-multiplication-result
       
       # Misc checks that are often annoying
       - misc-non-private-member-variables-in-classes
       - misc-include-cleaner
       - misc-const-correctness
+      - misc-use-anonymous-namespace
+      - misc-unused-parameters
+      
+      # Include checks that are often wrong
+      - readability-redundant-includes
       
       # Google style checks (often too opinionated)
       - google-*

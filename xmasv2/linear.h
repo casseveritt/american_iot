@@ -47,11 +47,11 @@
 
 #pragma once
 
-//#include <memory.h>
+// #include <memory.h>
 #include <assert.h>
 #include <math.h>
 
-//#include <algorithm>
+// #include <algorithm>
 
 #define R3_RAD_TO_DEG 57.2957795130823208767981548141052
 #define R3_DEG_TO_RAD 0.0174532925199432957692369076848861
@@ -79,12 +79,12 @@ inline T LessThan(T a, T b) {
 }
 
 template <typename T>
-inline constexpr T ToDegrees(T radians) {
+constexpr T ToDegrees(T radians) {
   return radians * T(R3_RAD_TO_DEG);
 }
 
 template <typename T>
-inline constexpr T ToRadians(T degrees) {
+constexpr T ToRadians(T degrees) {
   return degrees * T(R3_DEG_TO_RAD);
 }
 
@@ -157,7 +157,9 @@ struct Vec2 {
   T Normalize() {
     T len = Length();
     if (len > R3_EPSILON) {
-      for (int i = 0; i < N; i++) v[i] /= len;
+      for (int i = 0; i < N; i++) {
+        v[i] /= len;
+      }
     }
     return len;
   }
@@ -168,35 +170,37 @@ struct Vec2 {
     return n;
   }
 
-  T& operator[](int i) {
-    return v[i];
-  }
+  T& operator[](int i) { return v[i]; }
 
-  const T& operator[](int i) const {
-    return v[i];
-  }
+  const T& operator[](int i) const { return v[i]; }
 
   Vec2& operator*=(T d) {
-    for (int i = 0; i < N; i++) v[i] *= d;
+    for (int i = 0; i < N; i++) {
+      v[i] *= d;
+    }
     return *this;
   }
 
   Vec2& operator*=(const Vec2& u) {
-    for (int i = 0; i < N; i++) v[i] *= u[i];
+    for (int i = 0; i < N; i++) {
+      v[i] *= u[i];
+    }
     return *this;
   }
 
-  Vec2& operator/=(T d) {
-    return *this *= (T(1) / d);
-  }
+  Vec2& operator/=(T d) { return *this *= (T(1) / d); }
 
   Vec2& operator+=(const Vec2& u) {
-    for (int i = 0; i < N; i++) v[i] += u.v[i];
+    for (int i = 0; i < N; i++) {
+      v[i] += u.v[i];
+    }
     return *this;
   }
 
   Vec2& operator-=(const Vec2& u) {
-    for (int i = 0; i < N; i++) v[i] -= u.v[i];
+    for (int i = 0; i < N; i++) {
+      v[i] -= u.v[i];
+    }
     return *this;
   }
 
@@ -256,8 +260,11 @@ inline Vec2<T> operator-(const Vec2<T>& v1, const Vec2<T>& v2) {
 
 template <class T>
 inline bool operator==(const Vec2<T>& v1, const Vec2<T>& v2) {
-  for (int i = 0; i < 2; i++)
-    if (v1.v[i] != v2.v[i]) return false;
+  for (int i = 0; i < 2; i++) {
+    if (v1.v[i] != v2.v[i]) {
+      return false;
+    }
+  }
   return true;
 }
 
@@ -288,9 +295,7 @@ class Vec3 {
   typedef T ElementType;
   static const int N = 3;
 
-  Vec3() {
-    x = y = z = 0.f;
-  }
+  Vec3() { x = y = z = 0.f; }
   Vec3(const T* tp) {
     x = tp[0];
     y = tp[1];
@@ -333,13 +338,9 @@ class Vec3 {
 
   // generic part
 
-  int Size() const {
-    return N;
-  }
+  int Size() const { return N; }
 
-  const T* GetValue() const {
-    return v;
-  }
+  const T* GetValue() const { return v; }
 
   T Dot(const Vec3& rhs) const {
     T r = 0;
@@ -406,13 +407,9 @@ class Vec3 {
     return *this;
   }
 
-  T& operator[](int i) {
-    return v[i];
-  }
+  T& operator[](int i) { return v[i]; }
 
-  const T& operator[](int i) const {
-    return v[i];
-  }
+  const T& operator[](int i) const { return v[i]; }
 
   Vec3& operator*=(T d) {
     for (int i = 0; i < N; i++) {
@@ -428,9 +425,7 @@ class Vec3 {
     return *this;
   }
 
-  Vec3& operator/=(T d) {
-    return *this *= (T(1) / d);
-  }
+  Vec3& operator/=(T d) { return *this *= (T(1) / d); }
 
   Vec3& operator+=(T d) {
     for (int i = 0; i < N; i++) {
@@ -583,13 +578,9 @@ class Vec4 {
 
   // generic part
 
-  int Size() const {
-    return N;
-  }
+  int Size() const { return N; }
 
-  const T* GetValue() const {
-    return v;
-  }
+  const T* GetValue() const { return v; }
 
   T Dot(const Vec4& rhs) const {
     T r = 0;
@@ -644,13 +635,9 @@ class Vec4 {
     return *this;
   }
 
-  T& operator[](int i) {
-    return v[i];
-  }
+  T& operator[](int i) { return v[i]; }
 
-  const T& operator[](int i) const {
-    return v[i];
-  }
+  const T& operator[](int i) const { return v[i]; }
 
   Vec4& operator*=(T d) {
     for (int i = 0; i < N; i++) {
@@ -666,9 +653,7 @@ class Vec4 {
     return *this;
   }
 
-  Vec4& operator/=(T d) {
-    return *this *= (T(1) / d);
-  }
+  Vec4& operator/=(T d) { return *this *= (T(1) / d); }
 
   Vec4& operator+=(const Vec4& u) {
     for (int i = 0; i < N; i++) {
@@ -686,7 +671,7 @@ class Vec4 {
 
   Vec4 operator-() const {
     Vec4 rv(*this);
-    rv.negate();
+    rv.Negate();
     return rv;
   }
 
@@ -811,13 +796,9 @@ class Line {
  public:
   typedef T ElementType;
 
-  Line() {
-    SetValue(Vec3<T>(0, 0, 0), Vec3<T>(0, 0, 1));
-  }
+  Line() { SetValue(Vec3<T>(0, 0, 0), Vec3<T>(0, 0, 1)); }
 
-  Line(const Vec3<T>& p0, const Vec3<T>& p1) {
-    SetValue(p0, p1);
-  }
+  Line(const Vec3<T>& p0, const Vec3<T>& p1) { SetValue(p0, p1); }
 
   void SetValue(const Vec3<T>& p0, const Vec3<T>& p1) {
     position = p0;
@@ -825,9 +806,12 @@ class Line {
     direction.Normalize();
   }
 
-  bool GetClosestPoints(const Line& line2, Vec3<T>& pointOnThis, Vec3<T>& pointOnThat) {
+  bool GetClosestPoints(const Line& line2, Vec3<T>& pointOnThis,
+                        Vec3<T>& pointOnThat) {
     // quick check to see if parallel -- if so, quit.
-    if (fabs(direction.Dot(line2.direction)) == 1.0) return 0;
+    if (fabs(direction.Dot(line2.direction)) == 1.0) {
+      return 0;
+    }
     Line l2 = line2;
 
     // Algorithm: Brian Jean
@@ -859,13 +843,9 @@ class Line {
     return rp;
   }
 
-  const Vec3<T>& GetPosition() const {
-    return position;
-  }
+  const Vec3<T>& GetPosition() const { return position; }
 
-  const Vec3<T>& GetDirection() const {
-    return direction;
-  }
+  const Vec3<T>& GetDirection() const { return direction; }
 
   // protected:
   Vec3<T> position;
@@ -889,14 +869,14 @@ struct LineSegment2 {
 template <typename T>
 inline bool Intersect(const LineSegment2<T>& s0, const LineSegment2<T>& s1) {
   Vec3<T> p = s0.GetPlane();
-  if (p.Dot(Vec3<T>(s1.a.x, s1.a.y, 1)) * p.Dot(Vec3<T>(s1.b.x, s1.b.y, 1)) > 0) {
+  if (p.Dot(Vec3<T>(s1.a.x, s1.a.y, 1)) * p.Dot(Vec3<T>(s1.b.x, s1.b.y, 1)) >
+      0) {
     return false;
   }
   p = s1.GetPlane();
-  if (p.Dot(Vec3<T>(s0.a.x, s0.a.y, 1)) * p.Dot(Vec3<T>(s0.b.x, s0.b.y, 1)) > 0) {
-    return false;
-  }
-  return true;
+  return static_cast<bool>(p.Dot(Vec3<T>(s0.a.x, s0.a.y, 1)) *
+                               p.Dot(Vec3<T>(s0.b.x, s0.b.y, 1)) <=
+                           0);
 }
 
 // Matrix3
@@ -906,9 +886,7 @@ class Matrix3 {
   typedef T ElementType;
   T m[3][3];
 
-  Matrix3() {
-    MakeIdentity();
-  }
+  Matrix3() { MakeIdentity(); }
 
   template <typename TIN>
   Matrix3(const TIN* in) {
@@ -941,7 +919,8 @@ class Matrix3 {
     int G[3] = {2, 2, 1};
     for (int row = 0; row < 3; row++) {
       for (int col = 0; col < 3; col++) {
-        T t = m[L[row]][L[col]] * m[G[row]][G[col]] - m[G[row]][L[col]] * m[L[row]][G[col]];
+        T t = m[L[row]][L[col]] * m[G[row]][G[col]] -
+              m[G[row]][L[col]] * m[L[row]][G[col]];
 
         m3.m[row][col] = ((row + col) & 0x1) ? -t : t;
       }
@@ -964,14 +943,13 @@ class Matrix3 {
   }
 
   T Determinant() const {
-    T result = m[0][0] * m[1][1] * m[2][2] + m[0][1] * m[1][2] * m[2][0] + m[0][2] * m[1][0] * m[2][1] -
-               m[2][0] * m[1][1] * m[0][2] - m[2][1] * m[1][2] * m[0][0] - m[2][2] * m[1][0] * m[0][1];
+    T result = m[0][0] * m[1][1] * m[2][2] + m[0][1] * m[1][2] * m[2][0] +
+               m[0][2] * m[1][0] * m[2][1] - m[2][0] * m[1][1] * m[0][2] -
+               m[2][1] * m[1][2] * m[0][0] - m[2][2] * m[1][0] * m[0][1];
     return result;
   }
 
-  void Div(T t) {
-    Mul(T(1.0) / t);
-  }
+  void Div(T t) { Mul(T(1.0) / t); }
 
   void Mul(T t) {
     for (int row = 0; row < 3; row++) {
@@ -988,9 +966,7 @@ class Matrix3 {
     return m3;
   }
 
-  Vec3<T> GetRow(int i) const {
-    return Vec3<T>(m[i][0], m[i][1], m[i][2]);
-  }
+  Vec3<T> GetRow(int i) const { return Vec3<T>(m[i][0], m[i][1], m[i][2]); }
 
   void SetRow(int i, const Vec3<T>& v) {
     m[i][0] = v.x;
@@ -998,9 +974,7 @@ class Matrix3 {
     m[i][2] = v.z;
   }
 
-  Vec3<T> GetColumn(int i) const {
-    return Vec3<T>(m[0][i], m[1][i], m[2][i]);
-  }
+  Vec3<T> GetColumn(int i) const { return Vec3<T>(m[0][i], m[1][i], m[2][i]); }
 
   void SetColumn(int i, const Vec3<T>& v) {
     m[0][i] = v.x;
@@ -1008,18 +982,15 @@ class Matrix3 {
     m[2][i] = v.z;
   }
 
-  T& operator()(int row, int col) {
-    return m[row][col];
-  }
+  T& operator()(int row, int col) { return m[row][col]; }
 
-  const T& operator()(int row, int col) const {
-    return m[row][col];
-  }
+  const T& operator()(int row, int col) const { return m[row][col]; }
 };
 
 template <typename T>
 inline Vec3<T> operator*(const Matrix3<T>& m, const Vec3<T>& v) {
-  return Vec3<T>(m(0, 0) * v.x + m(0, 1) * v.y + m(0, 2) * v.z, m(1, 0) * v.x + m(1, 1) * v.y + m(1, 2) * v.z,
+  return Vec3<T>(m(0, 0) * v.x + m(0, 1) * v.y + m(0, 2) * v.z,
+                 m(1, 0) * v.x + m(1, 1) * v.y + m(1, 2) * v.z,
                  m(2, 0) * v.x + m(2, 1) * v.y + m(2, 2) * v.z);
 }
 
@@ -1030,15 +1001,12 @@ class Matrix4 {
  public:
   typedef T ElementType;
 
-  Matrix4() {
-    MakeIdentity();
-  }
+  Matrix4() { MakeIdentity(); }
 
-  Matrix4(T* m_) {
-    SetValue(m_);
-  }
+  Matrix4(T* m_) { SetValue(m_); }
 
-  Matrix4(T a00, T a01, T a02, T a03, T a10, T a11, T a12, T a13, T a20, T a21, T a22, T a23, T a30, T a31, T a32, T a33) {
+  Matrix4(T a00, T a01, T a02, T a03, T a10, T a11, T a12, T a13, T a20, T a21,
+          T a22, T a23, T a30, T a31, T a32, T a33) {
     el(0, 0) = a00;
     el(0, 1) = a01;
     el(0, 2) = a02;
@@ -1069,9 +1037,7 @@ class Matrix4 {
     }
   }
 
-  const T* GetValue() const {
-    return m;
-  }
+  const T* GetValue() const { return m; }
 
   void SetValue(T* mp) {
     int c = 0;
@@ -1113,7 +1079,8 @@ class Matrix4 {
   }
 
   static Matrix4 Identity() {
-    static const Matrix4 mident(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    static const Matrix4 mident(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+                                0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
     return mident;
   }
 
@@ -1196,22 +1163,30 @@ class Matrix4 {
   Matrix4 Inverted() const {
     Matrix4 minv;
 
-    T r1[8], r2[8], r3[8], r4[8];
-    T *s[4], *tmprow;
+    T r1[8];
+    T r2[8];
+    T r3[8];
+    T r4[8];
+    T* s[4];
+    T* tmprow;
 
     s[0] = &r1[0];
     s[1] = &r2[0];
     s[2] = &r3[0];
     s[3] = &r4[0];
 
-    int i, j, p, jj;
+    int i;
+    int j;
+    int p;
+    int jj;
     for (i = 0; i < 4; i++) {
       for (j = 0; j < 4; j++) {
         s[i][j] = el(i, j);
-        if (i == j)
+        if (i == j) {
           s[i][j + 4] = 1.0;
-        else
+        } else {
           s[i][j + 4] = 0.0;
+        }
       }
     }
     T scp[4];
@@ -1261,7 +1236,9 @@ class Matrix4 {
         }
       }
     }
-    if (s[3][3] == 0.0) return minv;  // singular matrix!
+    if (s[3][3] == 0.0) {
+      return minv;  // singular matrix!
+    }
 
     //
     // Now we have an upper triangular matrix.
@@ -1343,9 +1320,12 @@ class Matrix4 {
 
     assert(w != R3_ZERO);
 
-    dst.x = (src.x * el(0, 0) + src.y * el(0, 1) + src.z * el(0, 2) + el(0, 3)) / w;
-    dst.y = (src.x * el(1, 0) + src.y * el(1, 1) + src.z * el(1, 2) + el(1, 3)) / w;
-    dst.z = (src.x * el(2, 0) + src.y * el(2, 1) + src.z * el(2, 2) + el(2, 3)) / w;
+    dst.x =
+        (src.x * el(0, 0) + src.y * el(0, 1) + src.z * el(0, 2) + el(0, 3)) / w;
+    dst.y =
+        (src.x * el(1, 0) + src.y * el(1, 1) + src.z * el(1, 2) + el(1, 3)) / w;
+    dst.z =
+        (src.x * el(2, 0) + src.y * el(2, 1) + src.z * el(2, 2) + el(2, 3)) / w;
   }
 
   void MultMatrixVec(Vec3<T>& src_and_dst) const {
@@ -1358,9 +1338,12 @@ class Matrix4 {
 
     assert(w != R3_ZERO);
 
-    dst.x = (src.x * el(0, 0) + src.y * el(1, 0) + src.z * el(2, 0) + el(3, 0)) / w;
-    dst.y = (src.x * el(0, 1) + src.y * el(1, 1) + src.z * el(2, 1) + el(3, 1)) / w;
-    dst.z = (src.x * el(0, 2) + src.y * el(1, 2) + src.z * el(2, 2) + el(3, 2)) / w;
+    dst.x =
+        (src.x * el(0, 0) + src.y * el(1, 0) + src.z * el(2, 0) + el(3, 0)) / w;
+    dst.y =
+        (src.x * el(0, 1) + src.y * el(1, 1) + src.z * el(2, 1) + el(3, 1)) / w;
+    dst.z =
+        (src.x * el(0, 2) + src.y * el(1, 2) + src.z * el(2, 2) + el(3, 2)) / w;
   }
 
   void MultVecMatrix(Vec3<T>& src_and_dst) const {
@@ -1369,10 +1352,14 @@ class Matrix4 {
 
   // dst = M * src
   void MultMatrixVec(const Vec4<T>& src, Vec4<T>& dst) const {
-    dst.x = (src.x * el(0, 0) + src.y * el(0, 1) + src.z * el(0, 2) + src.w * el(0, 3));
-    dst.y = (src.x * el(1, 0) + src.y * el(1, 1) + src.z * el(1, 2) + src.w * el(1, 3));
-    dst.z = (src.x * el(2, 0) + src.y * el(2, 1) + src.z * el(2, 2) + src.w * el(2, 3));
-    dst.w = (src.x * el(3, 0) + src.y * el(3, 1) + src.z * el(3, 2) + src.w * el(3, 3));
+    dst.x = (src.x * el(0, 0) + src.y * el(0, 1) + src.z * el(0, 2) +
+             src.w * el(0, 3));
+    dst.y = (src.x * el(1, 0) + src.y * el(1, 1) + src.z * el(1, 2) +
+             src.w * el(1, 3));
+    dst.z = (src.x * el(2, 0) + src.y * el(2, 1) + src.z * el(2, 2) +
+             src.w * el(2, 3));
+    dst.w = (src.x * el(3, 0) + src.y * el(3, 1) + src.z * el(3, 2) +
+             src.w * el(3, 3));
   }
 
   void MultMatrixVec(Vec4<T>& src_and_dst) const {
@@ -1381,10 +1368,14 @@ class Matrix4 {
 
   // dst = src * M
   void MultVecMatrix(const Vec4<T>& src, Vec4<T>& dst) const {
-    dst.x = (src.x * el(0, 0) + src.y * el(1, 0) + src.z * el(2, 0) + src.w * el(3, 0));
-    dst.y = (src.x * el(0, 1) + src.y * el(1, 1) + src.z * el(2, 1) + src.w * el(3, 1));
-    dst.z = (src.x * el(0, 2) + src.y * el(1, 2) + src.z * el(2, 2) + src.w * el(3, 2));
-    dst.w = (src.x * el(0, 3) + src.y * el(1, 3) + src.z * el(2, 3) + src.w * el(3, 3));
+    dst.x = (src.x * el(0, 0) + src.y * el(1, 0) + src.z * el(2, 0) +
+             src.w * el(3, 0));
+    dst.y = (src.x * el(0, 1) + src.y * el(1, 1) + src.z * el(2, 1) +
+             src.w * el(3, 1));
+    dst.z = (src.x * el(0, 2) + src.y * el(1, 2) + src.z * el(2, 2) +
+             src.w * el(3, 2));
+    dst.w = (src.x * el(0, 3) + src.y * el(1, 3) + src.z * el(2, 3) +
+             src.w * el(3, 3));
   }
 
   void MultVecMatrix(Vec4<T>& src_and_dst) const {
@@ -1413,21 +1404,13 @@ class Matrix4 {
     MultDirMatrix(Vec3<T>(src_and_dst), src_and_dst);
   }
 
-  T& operator()(int row, int col) {
-    return el(row, col);
-  }
+  T& operator()(int row, int col) { return el(row, col); }
 
-  const T& operator()(int row, int col) const {
-    return el(row, col);
-  }
+  const T& operator()(int row, int col) const { return el(row, col); }
 
-  T& el(int row, int col) {
-    return m[row | (col << 2)];
-  }
+  T& el(int row, int col) { return m[row | (col << 2)]; }
 
-  const T& el(int row, int col) const {
-    return m[row | (col << 2)];
-  }
+  const T& el(int row, int col) const { return m[row | (col << 2)]; }
 
   Matrix4& operator*=(const Matrix4& mat) {
     MultRight(mat);
@@ -1469,10 +1452,13 @@ inline Matrix4<T> operator*(const Matrix4<T>& m1, const Matrix4<T>& m2) {
 
 template <typename T>
 inline bool operator==(const Matrix4<T>& m1, const Matrix4<T>& m2) {
-  return (m1(0, 0) == m2(0, 0) && m1(0, 1) == m2(0, 1) && m1(0, 2) == m2(0, 2) && m1(0, 3) == m2(0, 3) && m1(1, 0) == m2(1, 0) &&
-          m1(1, 1) == m2(1, 1) && m1(1, 2) == m2(1, 2) && m1(1, 3) == m2(1, 3) && m1(2, 0) == m2(2, 0) && m1(2, 1) == m2(2, 1) &&
-          m1(2, 2) == m2(2, 2) && m1(2, 3) == m2(2, 3) && m1(3, 0) == m2(3, 0) && m1(3, 1) == m2(3, 1) && m1(3, 2) == m2(3, 2) &&
-          m1(3, 3) == m2(3, 3));
+  return (
+      m1(0, 0) == m2(0, 0) && m1(0, 1) == m2(0, 1) && m1(0, 2) == m2(0, 2) &&
+      m1(0, 3) == m2(0, 3) && m1(1, 0) == m2(1, 0) && m1(1, 1) == m2(1, 1) &&
+      m1(1, 2) == m2(1, 2) && m1(1, 3) == m2(1, 3) && m1(2, 0) == m2(2, 0) &&
+      m1(2, 1) == m2(2, 1) && m1(2, 2) == m2(2, 2) && m1(2, 3) == m2(2, 3) &&
+      m1(3, 0) == m2(3, 0) && m1(3, 1) == m2(3, 1) && m1(3, 2) == m2(3, 2) &&
+      m1(3, 3) == m2(3, 3));
 }
 
 template <typename T>
@@ -1555,33 +1541,24 @@ class Quaternion {
     q[3] = R3_ONE;
   }
 
-  Quaternion(const T v[4]) {
-    SetValue(v);
-  }
+  Quaternion(const T v[4]) { SetValue(v); }
 
-  Quaternion(T q0, T q1, T q2, T q3) {
-    SetValue(q0, q1, q2, q3);
-  }
+  Quaternion(T q0, T q1, T q2, T q3) { SetValue(q0, q1, q2, q3); }
 
-  Quaternion(const Matrix4<T>& m) {
-    SetValue(m);
-  }
+  Quaternion(const Matrix4<T>& m) { SetValue(m); }
 
-  Quaternion(const Vec3<T>& axis, T radians) {
-    SetValue(axis, radians);
-  }
+  Quaternion(const Vec3<T>& axis, T radians) { SetValue(axis, radians); }
 
   Quaternion(const Vec3<T>& rotateFrom, const Vec3<T>& rotateTo) {
     SetValue(rotateFrom, rotateTo);
   }
 
-  Quaternion(const Vec3<T>& fromLook, const Vec3<T>& fromUp, const Vec3<T>& toLook, const Vec3<T>& toUp) {
+  Quaternion(const Vec3<T>& fromLook, const Vec3<T>& fromUp,
+             const Vec3<T>& toLook, const Vec3<T>& toUp) {
     SetValue(fromLook, fromUp, toLook, toUp);
   }
 
-  const T* GetValue() const {
-    return &q[0];
-  }
+  const T* GetValue() const { return &q[0]; }
 
   void GetValue(T& q0, T& q1, T& q2, T& q3) const {
     q0 = q[0];
@@ -1600,9 +1577,9 @@ class Quaternion {
 
   void GetValue(Vec3<T>& axis, T& radians) const {
     radians = T(acos(q[3]) * R3_TWO);
-    if (radians == R3_ZERO)
+    if (radians == R3_ZERO) {
       axis = Vec3<T>(0.0, 0.0, 1.0);
-    else {
+    } else {
       axis.x = q[0];
       axis.y = q[1];
       axis.z = q[2];
@@ -1611,7 +1588,19 @@ class Quaternion {
   }
 
   void GetValue(Matrix3<T>& m) const {
-    T s, xs, ys, zs, wx, wy, wz, xx, xy, xz, yy, yz, zz;
+    T s;
+    T xs;
+    T ys;
+    T zs;
+    T wx;
+    T wy;
+    T wz;
+    T xx;
+    T xy;
+    T xz;
+    T yy;
+    T yz;
+    T zz;
 
     T norm = q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3];
 
@@ -1671,8 +1660,11 @@ class Quaternion {
   }
 
   Quaternion& SetValue(const Matrix4<T>& m) {
-    T tr, s;
-    int i, j, k;
+    T tr;
+    T s;
+    int i;
+    int j;
+    int k;
     const int nxt[3] = {1, 2, 0};
 
     tr = m(0, 0) + m(1, 1) + m(2, 2);
@@ -1687,9 +1679,13 @@ class Quaternion {
       q[2] = T((m(0, 1) - m(1, 0)) * s);
     } else {
       i = 0;
-      if (m(1, 1) > m(0, 0)) i = 1;
+      if (m(1, 1) > m(0, 0)) {
+        i = 1;
+      }
 
-      if (m(2, 2) > m(i, i)) i = 2;
+      if (m(2, 2) > m(i, i)) {
+        i = 2;
+      }
 
       j = nxt[i];
       k = nxt[j];
@@ -1730,7 +1726,8 @@ class Quaternion {
   }
 
   Quaternion& SetValue(const Vec3<T>& rotateFrom, const Vec3<T>& rotateTo) {
-    Vec3<T> p1, p2;
+    Vec3<T> p1;
+    Vec3<T> p2;
     T alpha;
 
     p1 = rotateFrom;
@@ -1769,7 +1766,8 @@ class Quaternion {
     return *this;
   }
 
-  Quaternion& SetValue(const Vec3<T>& fromLook, const Vec3<T>& fromUp, const Vec3<T>& toLook, const Vec3<T>& toUp) {
+  Quaternion& SetValue(const Vec3<T>& fromLook, const Vec3<T>& fromUp,
+                       const Vec3<T>& toLook, const Vec3<T>& toUp) {
     Vec3<T> fL = fromLook.Normalized();
     Vec3<T> fU = fromUp.Normalized();
     Vec3<T> tL = toLook.Normalized();
@@ -1826,8 +1824,8 @@ class Quaternion {
   bool Equals(const Quaternion& r, T tolerance) const {
     T t;
 
-    t = ((q[0] - r.q[0]) * (q[0] - r.q[0]) + (q[1] - r.q[1]) * (q[1] - r.q[1]) + (q[2] - r.q[2]) * (q[2] - r.q[2]) +
-         (q[3] - r.q[3]) * (q[3] - r.q[3]));
+    t = ((q[0] - r.q[0]) * (q[0] - r.q[0]) + (q[1] - r.q[1]) * (q[1] - r.q[1]) +
+         (q[2] - r.q[2]) * (q[2] - r.q[2]) + (q[3] - r.q[3]) * (q[3] - r.q[3]));
     if (t > R3_EPSILON) {
       return false;
     }
@@ -1841,9 +1839,7 @@ class Quaternion {
     return *this;
   }
 
-  Quaternion& Invert() {
-    return Conjugate();
-  }
+  Quaternion& Invert() { return Conjugate(); }
 
   Quaternion Inverted() const {
     Quaternion r = *this;
@@ -1889,8 +1885,8 @@ class Quaternion {
     T cos_omega = p.x * q.x + p.y * q.y + p.z * q.z + p.w * q.w;
     // if B is on opposite hemisphere from A, use -B instead
 
-    int bflip;
-    if ((bflip = (cos_omega < R3_ZERO))) {
+    int bflip = (cos_omega < R3_ZERO);
+    if (bflip) {
       cos_omega = -cos_omega;
     }
 
@@ -1943,7 +1939,8 @@ class Quaternion {
 
 template <typename T>
 inline bool operator==(const Quaternion<T>& q1, const Quaternion<T>& q2) {
-  return (Equivalent(q1.x, q2.x) && Equivalent(q1.y, q2.y) && Equivalent(q1.z, q2.z) && Equivalent(q1.w, q2.w));
+  return (Equivalent(q1.x, q2.x) && Equivalent(q1.y, q2.y) &&
+          Equivalent(q1.z, q2.z) && Equivalent(q1.w, q2.w));
 }
 
 template <typename T>
@@ -1952,7 +1949,8 @@ inline bool operator!=(const Quaternion<T>& q1, const Quaternion<T>& q2) {
 }
 
 template <typename T>
-inline Quaternion<T> operator*(const Quaternion<T>& q1, const Quaternion<T>& q2) {
+inline Quaternion<T> operator*(const Quaternion<T>& q1,
+                               const Quaternion<T>& q2) {
   Quaternion<T> r(q1);
   r *= q2;
   return r;
@@ -1995,9 +1993,7 @@ class Plane {
     planedistance = point.Dot(planenormal);
   }
 
-  void Offset(T d) {
-    planedistance += d;
-  }
+  void Offset(T d) { planedistance += d; }
 
   bool Intersect(const Line<T>& line, Vec3<T>& intersection) const {
     Vec3<T> n = planenormal.Normalized();
@@ -2022,7 +2018,9 @@ class Plane {
   }
 
   bool IsInHalfSpace(const Vec3<T>& point) const {
-    if ((point.Dot(planenormal) - planedistance) < 0.0) return 0;
+    if ((point.Dot(planenormal) - planedistance) < 0.0) {
+      return 0;
+    }
     return 1;
   }
 
@@ -2032,13 +2030,9 @@ class Plane {
     return pl.Dot(pt);
   }
 
-  const Vec3<T>& GetNormal() const {
-    return planenormal;
-  }
+  const Vec3<T>& GetNormal() const { return planenormal; }
 
-  T GetDistanceFromOrigin() const {
-    return planedistance;
-  }
+  T GetDistanceFromOrigin() const { return planedistance; }
 
   // protected:
   Vec3<T> planenormal;
@@ -2047,7 +2041,8 @@ class Plane {
 
 template <typename T>
 inline bool operator==(const Plane<T>& p1, const Plane<T>& p2) {
-  return (p1.planedistance == p2.planedistance && p1.planenormal == p2.planenormal);
+  return (p1.planedistance == p2.planedistance &&
+          p1.planenormal == p2.planenormal);
 }
 
 template <typename T>
@@ -2059,7 +2054,8 @@ inline bool operator!=(const Plane<T>& p1, const Plane<T>& p2) {
 
 // inverse of camera_lookat
 template <typename T>
-inline Matrix4<T> GeomLookAt(const Vec3<T>& from, const Vec3<T>& to, const Vec3<T>& Up) {
+inline Matrix4<T> GeomLookAt(const Vec3<T>& from, const Vec3<T>& to,
+                             const Vec3<T>& Up) {
   Vec3<T> look = to - from;
   look.Normalize();
   Vec3<T> up(Up);
@@ -2075,7 +2071,8 @@ inline Matrix4<T> GeomLookAt(const Vec3<T>& from, const Vec3<T>& to, const Vec3<
 
 // inverse of object_lookat
 template <typename T>
-inline Matrix4<T> CameraLookAt(const Vec3<T>& eye, const Vec3<T>& lookpoint, const Vec3<T>& Up) {
+inline Matrix4<T> CameraLookAt(const Vec3<T>& eye, const Vec3<T>& lookpoint,
+                               const Vec3<T>& Up) {
   Vec3<T> look = lookpoint - eye;
   look.Normalize();
   Vec3<T> up(Up);
@@ -2112,7 +2109,8 @@ inline Matrix4<T> Frustum(T left, T right, T bottom, T top, T zNear, T zFar) {
 }
 
 template <typename T>
-inline Matrix4<T> FrustumInverted(T left, T right, T bottom, T top, T zNear, T zFar) {
+inline Matrix4<T> FrustumInverted(T left, T right, T bottom, T top, T zNear,
+                                  T zFar) {
   Matrix4<T> m;
 
   m(0, 0) = (right - left) / (2 * zNear);
@@ -2156,7 +2154,8 @@ inline Matrix4<T> Ortho(T left, T right, T bottom, T top, T zNear, T zFar) {
 }
 
 template <typename T>
-inline Matrix4<T> OrthoInverted(T left, T right, T bottom, T top, T zNear, T zFar) {
+inline Matrix4<T> OrthoInverted(T left, T right, T bottom, T top, T zNear,
+                                T zFar) {
   // could be done with a formula, but I'm being lazy
   Matrix4<T> m = Ortho(left, right, bottom, top, zNear, zFar);
   return m.Inverted();
@@ -2195,9 +2194,7 @@ struct Pose {
     r.SetValue(V(0, 0, -1), V(0, 1, 0), look, u);
   }
 
-  V Transform(const V& pos) const {
-    return t + r.Rotate(pos);
-  }
+  V Transform(const V& pos) const { return t + r.Rotate(pos); }
 
   Pose Inverted() const {
     Q ir = r.Inverted();

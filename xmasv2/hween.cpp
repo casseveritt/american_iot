@@ -29,6 +29,8 @@
 
 using namespace r3;
 
+namespace {
+
 struct TreeShader {
   virtual void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) = 0;
 };
@@ -94,13 +96,14 @@ struct HueShader : public TreeShader {
     for (auto p : pixInfo) {
       float theta = atan2(p.position.z, p.position.x) + M_PI;
       Vec3f rgb = rgb_from_hsv(
-          Vec3f(fmod(t * 0.07f + theta / (M_PI * 2.0f), 1.0), 1.0, 1.0));
+          Vec3f(fmod((t * 0.07f) + (theta / (M_PI * 2.0f)), 1.0), 1.0, 1.0));
 
       constexpr float width = 0.2;
       constexpr float half_width = width / 2.0f;
-      float sc = pow(
-          fabs(fmod(p.position.y + 0.03f * t, width) - half_width) / half_width,
-          3.0);
+      float sc =
+          pow(fabs(fmod(p.position.y + (0.03f * t), width) - half_width) /
+                  half_width,
+              3.0);
       rgb *= sc;
       set_color(buffer, p.index, rgb);
     }
@@ -108,11 +111,11 @@ struct HueShader : public TreeShader {
 };
 
 struct NoiseShader : public TreeShader {
-  ColorMap colorMap;
+  const ColorMap &colorMap;
   float scale;
   float speed;
 
-  NoiseShader(ColorMap cmap, float scaleIn, float speedIn)
+  NoiseShader(const ColorMap &cmap, float scaleIn, float speedIn)
       : colorMap(cmap), scale(scaleIn), speed(speedIn) {}
 
   void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
@@ -167,7 +170,7 @@ void show_strip_index(uint8_t *buffer) {
 
 void worker(int id) {
   printf("Starting worker %d\n", id);
-  while (terminate == false) {
+  while (!terminate) {
     std::optional<Work *> work = fetch_work();
     if (work) {
       auto &w = *work.value();
@@ -179,6 +182,8 @@ void worker(int id) {
     }
   }
 }
+
+}  // namespace
 
 int main(int argc, char *argv[]) {
   constexpr size_t sz = PIXELS_PER_STRIP * STRIPS * 3;
