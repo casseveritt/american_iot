@@ -30,16 +30,19 @@ using namespace r3;
 ColorMap blueBlack;
 ColorMap halloween;
 ColorMap rgbcmy;
+ColorMap maroonWhite;
+ColorMap sparkle[2];
 
-typedef void (*PixelFunc)(std::span<PixInfo> pixInfo, uint8_t *buffer,
-                          float t_s);
+struct TreeShader {
+  virtual void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) = 0;
+};
 
 bool terminate = false;
 
 enum Status { Waiting, Processing, Done };
 
 struct Work {
-  PixelFunc pixelFunc;
+  TreeShader *shader;
   std::span<PixInfo> pixInfo;
   uint8_t *buffer;
   float t_s;
@@ -90,46 +93,71 @@ void mark_work_done(Work *w) {
   w->status = Done;
 }
 
-void hue_pixels(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) {
-  for (auto p : pixInfo) {
-    float theta = atan2(p.position.z, p.position.x) + M_PI;
-    Vec3f rgb =
-        rgb_from_hsv(Vec3f(fmod(t + theta / (M_PI * 2.0f), 1.0), 1.0, 1.0));
+struct HueShader : public TreeShader {
+  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
+    for (auto p : pixInfo) {
+      float theta = atan2(p.position.z, p.position.x) + M_PI;
+      Vec3f rgb =
+          rgb_from_hsv(Vec3f(fmod(t + theta / (M_PI * 2.0f), 1.0), 1.0, 1.0));
 
-    constexpr float width = 0.2;
-    constexpr float half_width = width / 2.0f;
-    float sc =
-        pow(fabs(fmod(p.position.y + 0.2 * t, width) - half_width) / half_width,
-            3.0);
-    rgb *= sc;
-    set_color(buffer, p.index, rgb);
+      constexpr float width = 0.2;
+      constexpr float half_width = width / 2.0f;
+      float sc = pow(
+          fabs(fmod(p.position.y + 0.2 * t, width) - half_width) / half_width,
+          3.0);
+      rgb *= sc;
+      set_color(buffer, p.index, rgb);
+    }
   }
-}
-
-struct NoiseProgOpts {
-  ColorMap colorMap;
 };
 
-void noise_pixels(NoiseProgOpts &opts, std::span<PixInfo> pixInfo,
-                  uint8_t *buffer, float t) {
-  for (auto p : pixInfo) {
-    Vec3f pp = p.position * 20;
-    float noise =
-        0.5f + 0.5f * ImprovedNoise::noise(pp.x, pp.y + t * 0.5, pp.z);
-    auto c = opts.colorMap.lookupClamped(noise);
-    set_color(buffer, p.index, c);
+struct NoiseShader : public TreeShader {
+  ColorMap colorMap;
+  float scale;
+  float speed;
+
+  NoiseShader(ColorMap cmap, float scaleIn, float speedIn)
+      : colorMap(cmap), scale(scaleIn), speed(speedIn) {}
+
+  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
+    for (auto p : pixInfo) {
+      Vec3f pp = p.position * scale;
+      float noise =
+          0.5f + 0.5f * ImprovedNoise::noise(pp.x, pp.y + t * speed, pp.z);
+      auto c = colorMap.lookupClamped(noise);
+      set_color(buffer, p.index, c);
+    }
   }
-}
+};
 
-void ice_noise(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) {
-  NoiseProgOpts opts = {blueBlack};
-  noise_pixels(opts, pixInfo, buffer, t);
-}
+struct SparkleState {
+  float sparkleTime = 0.0f;
+  float sparkleDelay = 0.0f;
+};
+#if 0
+void eiffel(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) {
+  static float old_t = 0.0f;
+  float dt = t - old_t;
+  int dt = frameTime.dt();
+  int modeMs = frameTime.t0() - newProgStartMs;
+  int cmap = (newProgStartMs & 128) > 0 ? 1 : 0;
 
-void halloween_noise(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) {
-  NoiseProgOpts opts = {halloween};
-  noise_pixels(opts, pixInfo, buffer, t);
+  for (auto &li : led) {
+    const int i = li.index;
+    float t = 0.25f + sparkleTime[i] / 1000.0f;  // nominal sparkle duration
+    strip[i] = sparkle[cmap].lookup(t);
+    sparkleTime[i] += dt;
+    if (sparkleTime[i] >= sparkleDelay[i]) {
+      sparkleTime[i] = 0;
+      sparkleDelay[i] = (rand() % (3000 - 1000 + 1)) + 1000;
+    }
+  }
+  if (modeMs < 2000) {
+    clear(CRGB::Black);
+  }
+  old_t = t;
 }
+#endif
 
 void show_strip_index(uint8_t *buffer) {
   for (int strip = 0; strip < STRIPS; strip++) {
@@ -147,7 +175,7 @@ void worker(int id) {
     std::optional<Work *> work = fetch_work();
     if (work) {
       auto &w = *work.value();
-      w.pixelFunc(w.pixInfo, w.buffer, w.t_s);
+      w.shader->shade(w.pixInfo, w.buffer, w.t_s);
       w.status = Done;
       mark_work_done(&w);
     } else {
@@ -170,17 +198,23 @@ void init() {
 
   auto orange = ORANGE * 0.0625f;
   orange.y *= 0.5f;
+  halloween.addColor(BLACK);
+  halloween.addColor(BLACK);
+  halloween.addColor(BLACK);
+  halloween.addColor(BLACK);
+  halloween.addColor(BLACK);
+  halloween.addColor(BLACK);
+  halloween.addColor(PURPLE * 0.08f);
+  halloween.addColor(orange);
   halloween.addColor(orange);
   halloween.addColor(orange);
   halloween.addColor(PURPLE * 0.08f);
-  halloween.addColor(PURPLE * 0.08f);
-  halloween.addColor(orange);
-  halloween.addColor(orange);
-  halloween.addColor(orange);
-  halloween.addColor(orange);
-  halloween.addColor(orange);
-  halloween.addColor(orange);
-  halloween.addColor(orange);
+  halloween.addColor(BLACK);
+  halloween.addColor(BLACK);
+  halloween.addColor(BLACK);
+  halloween.addColor(BLACK);
+  halloween.addColor(BLACK);
+  halloween.addColor(BLACK);
 
   rgbcmy.addColor(RED * 0.25f);
   rgbcmy.addColor(RED * 0.25f);
@@ -206,6 +240,37 @@ void init() {
   rgbcmy.addColor(YELLOW * 0.25f);
   rgbcmy.addColor(YELLOW * 0.25f);
   rgbcmy.addColor(YELLOW * 0.25f);
+
+  maroonWhite.addColor(WHITE * 0.0625);
+  maroonWhite.addColor(WHITE * 0.0625);
+  maroonWhite.addColor(WHITE * 0.0625);
+  maroonWhite.addColor(WHITE * 0.0625);
+  maroonWhite.addColor(WHITE * 0.0625);
+  maroonWhite.addColor(WHITE * 0.0625);
+  maroonWhite.addColor(WHITE * 0.0625);
+  maroonWhite.addColor(WHITE * 0.0625);
+  maroonWhite.addColor(MAROON * 0.0625);
+  maroonWhite.addColor(MAROON * 0.0625);
+  maroonWhite.addColor(MAROON * 0.0625);
+  maroonWhite.addColor(MAROON * 0.0625);
+  maroonWhite.addColor(MAROON * 0.0625);
+  maroonWhite.addColor(MAROON * 0.0625);
+  maroonWhite.addColor(MAROON * 0.0625);
+  maroonWhite.addColor(MAROON * 0.0625);
+
+  sparkle[0].clear();
+  sparkle[0].addColor(WHITE);
+  sparkle[0].addColor(YELLOW * 0.0625f);
+  sparkle[0].addColor(orange);
+  sparkle[0].addColor(RED * 0.03125f);
+  sparkle[0].addColor(BLACK);
+
+  sparkle[1].clear();
+  sparkle[1].addColor(WHITE);
+  sparkle[1].addColor(CYAN * 0.0625f);
+  sparkle[1].addColor(BLUE_VIOLET * 0.0625f);
+  sparkle[1].addColor(BLUE * 0.0625f);
+  sparkle[1].addColor(BLACK);
 }
 
 int main(int argc, char *argv[]) {
@@ -226,18 +291,22 @@ int main(int argc, char *argv[]) {
   int64_t start = epoch;
   int64_t count = 0;
 
+  HueShader hueShader;
+  NoiseShader iceShader(blueBlack, 20.0f, 0.5f);
+  NoiseShader halloweenShader(halloween, 5.0f, 0.7f);
+
   float progCycleTime = 180.0f;  // 3 minutes per program...
-  std::vector<PixelFunc> pixelFuncs = {ice_noise, halloween_noise, hue_pixels};
-  auto randomPixelFunc = [&pixelFuncs]() {
-    return pixelFuncs[rand() % pixelFuncs.size()];
+  std::vector<TreeShader *> progs = {&iceShader, &halloweenShader, &hueShader};
+  auto randomProg = [&progs]() -> TreeShader * {
+    return progs[rand() % progs.size()];
   };
 
-  std::unordered_map<std::string, PixelFunc> pixelFuncMap = {
-      {"ice_noise", ice_noise},
-      {"halloween_noise", halloween_noise},
-      {"hue", hue_pixels}};
+  std::unordered_map<std::string, TreeShader *> progMap = {
+      {"ice_noise", &iceShader},
+      {"halloween_noise", &halloweenShader},
+      {"hue", &hueShader}};
 
-  PixelFunc startPixelFunc = randomPixelFunc();
+  TreeShader *startProg = randomProg();
 
   // Parse command line arguments
   int opt;
@@ -246,7 +315,7 @@ int main(int argc, char *argv[]) {
       case 1:  // non-option argument
         if (strcmp(optarg, "--listprogs") == 0) {
           printf("Available programs:\n");
-          for (const auto &pair : pixelFuncMap) {
+          for (const auto &pair : progMap) {
             printf("  %s\n", pair.first.c_str());
           }
           exit(0);
@@ -255,9 +324,9 @@ int main(int argc, char *argv[]) {
           // Next argument should be the program name
           if (optind < argc) {
             std::string progName = argv[optind++];
-            auto it = pixelFuncMap.find(progName);
-            if (it != pixelFuncMap.end()) {
-              startPixelFunc = it->second;
+            auto it = progMap.find(progName);
+            if (it != progMap.end()) {
+              startProg = it->second;
               printf("Starting with program: %s\n", progName.c_str());
             } else {
               printf("Unknown program: %s\n", progName.c_str());
@@ -274,7 +343,7 @@ int main(int argc, char *argv[]) {
   std::thread t2(worker, 2);
   // std::thread t3(worker, 3);
   float prev_t_s = 0.0f;
-  PixelFunc pixelFunc = startPixelFunc;
+  TreeShader *prog = startProg;
 
   while (true) {
     uint64_t t_ns = get_time_nsec() - epoch;
@@ -283,10 +352,10 @@ int main(int argc, char *argv[]) {
     uint8_t *buffer = buffers[count % NUM_BUFFERS];
 
     if (int(t_s / progCycleTime) != int(prev_t_s / progCycleTime)) {
-      pixelFunc = randomPixelFunc();
+      prog = randomProg();
     }
 
-    Work w = {pixelFunc, pixInfo, buffer, t_s};
+    Work w = {prog, pixInfo, buffer, t_s};
 
     push_work(w);
 
