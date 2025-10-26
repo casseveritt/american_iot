@@ -16,11 +16,11 @@
 
 #include "cmap.h"
 #include "color.h"
+#include "get_time.h"
 #include "hsv.h"
 #include "linear.h"
 #include "perlin.h"
 #include "smi_leds.h"
-#include "time.h"
 #include "tree.h"
 
 #define NUM_BUFFERS 3

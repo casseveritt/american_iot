@@ -2,15 +2,66 @@ CompileFlags:
   Add: 
     - -std=c++20
     - -I/home/cass/src/smi_leds/include
+    - -Wno-unused-includes
+    - -Wno-include-angled-in-module-purview
   Remove:
     - -march=*
     - -mtune=*
 
 Index:
   Background: Build
+  StandardLibrary: Yes
 
 Diagnostics:
   ClangTidy:
-    Add: '*'
+    Add: 
+      - readability-*
+      - performance-*
+      - bugprone-*
+      - misc-*
     Remove: 
+      # Modernization checks that are often too aggressive
       - modernize-use-trailing-return-type
+      - modernize-use-auto
+      - modernize-loop-convert
+      - modernize-use-nodiscard
+      - modernize-use-override
+      - modernize-concat-nested-namespaces
+      
+      # Readability checks that are subjective
+      - readability-redundant-preprocessor
+      - readability-magic-numbers
+      - readability-function-cognitive-complexity
+      - readability-identifier-length
+      - readability-uppercase-literal-suffix
+      - readability-else-after-return
+      
+      # Performance checks that may not be relevant
+      - performance-avoid-endl
+      
+      # Bugprone checks that are often false positives
+      - bugprone-easily-swappable-parameters
+      - bugprone-exception-escape
+      
+      # Misc checks that are often annoying
+      - misc-non-private-member-variables-in-classes
+      - misc-include-cleaner
+      - misc-const-correctness
+      
+      # Google style checks (often too opinionated)
+      - google-*
+      
+      # LLVM style checks (often too specific)
+      - llvm-*
+      
+      # Cert checks (often too strict for general code)
+      - cert-*
+      
+      # Clang analyzer checks (can be slow and verbose)
+      - clang-analyzer-*
+  Includes:
+    IgnoreHeader: []
+    AnalyzeAngledIncludes: Yes
+
+Hover:
+  ShowAKA: Yes
