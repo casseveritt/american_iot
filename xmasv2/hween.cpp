@@ -97,13 +97,13 @@ struct HueShader : public TreeShader {
   void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
     for (auto p : pixInfo) {
       float theta = atan2(p.position.z, p.position.x) + M_PI;
-      Vec3f rgb =
-          rgb_from_hsv(Vec3f(fmod(t + theta / (M_PI * 2.0f), 1.0), 1.0, 1.0));
+      Vec3f rgb = rgb_from_hsv(
+          Vec3f(fmod(t * 0.07f + theta / (M_PI * 2.0f), 1.0), 1.0, 1.0));
 
       constexpr float width = 0.2;
       constexpr float half_width = width / 2.0f;
       float sc = pow(
-          fabs(fmod(p.position.y + 0.2 * t, width) - half_width) / half_width,
+          fabs(fmod(p.position.y + 0.03f * t, width) - half_width) / half_width,
           3.0);
       rgb *= sc;
       set_color(buffer, p.index, rgb);
