@@ -6,11 +6,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <deque>
-#include <mutex>
 #include <optional>
 #include <span>
-#include <thread>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -22,6 +20,7 @@
 #include "perlin.h"
 #include "smi_leds.h"
 #include "tree.h"
+#include "worker.h"
 
 #define NUM_BUFFERS 3
 
@@ -30,66 +29,6 @@
 using namespace r3;
 
 namespace {
-
-struct TreeShader {
-  virtual void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) = 0;
-};
-
-bool terminate = false;
-
-enum Status { Waiting, Processing, Done };
-
-struct Work {
-  TreeShader *shader;
-  std::span<PixInfo> pixInfo;
-  uint8_t *buffer;
-  float t_s;
-  Status status = Waiting;
-};
-
-std::deque<Work> workQueue;
-
-std::mutex workMutex;
-
-int work_size() { return int(workQueue.size()); }
-
-void push_work(const Work &work) {
-  std::scoped_lock lock(workMutex);
-  workQueue.push_back(work);
-}
-
-std::optional<Work> pop_work() {
-  std::scoped_lock lock(workMutex);
-  if (workQueue.size() == 0) {
-    return {};
-  }
-  auto work = workQueue.front();
-  // printf("pop_work() status = %d\n", int(work.status));
-  if (work.status != Done) {
-    return {};
-  }
-  workQueue.pop_front();
-  return work;
-}
-
-std::optional<Work *> fetch_work() {
-  std::scoped_lock lock(workMutex);
-  if (workQueue.size() == 0) {
-    return {};
-  }
-  for (auto &w : workQueue) {
-    if (w.status == Waiting) {
-      w.status = Processing;
-      return &w;
-    }
-  }
-  return {};
-}
-
-void mark_work_done(Work *w) {
-  std::scoped_lock lock(workMutex);
-  w->status = Done;
-}
 
 struct HueShader : public TreeShader {
   void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
@@ -133,6 +72,7 @@ struct SparkleState {
   float sparkleTime = 0.0f;
   float sparkleDelay = 0.0f;
 };
+
 #if 0
 void eiffel(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) {
   static float old_t = 0.0f;
@@ -164,21 +104,6 @@ void show_strip_index(uint8_t *buffer) {
     Vec3f color = rgb_from_hsv(Vec3f(float(strip) / STRIPS, 1.0f, 1.0f));
     for (int led = 0; led < PIXELS_PER_STRIP; led++) {
       set_color(buffer, strip * PIXELS_PER_STRIP + led, color);
-    }
-  }
-}
-
-void worker(int id) {
-  printf("Starting worker %d\n", id);
-  while (!terminate) {
-    std::optional<Work *> work = fetch_work();
-    if (work) {
-      auto &w = *work.value();
-      w.shader->shade(w.pixInfo, w.buffer, w.t_s);
-      w.status = Done;
-      mark_work_done(&w);
-    } else {
-      usleep(100);
     }
   }
 }
@@ -254,9 +179,8 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  std::thread t1(worker, 1);
-  std::thread t2(worker, 2);
-  // std::thread t3(worker, 3);
+  add_worker(1);
+  add_worker(2);
   float prev_t_s = 0.0f;
   TreeShader *prog = startProg;
 
