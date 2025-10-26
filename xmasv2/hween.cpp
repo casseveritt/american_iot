@@ -310,27 +310,30 @@ int main(int argc, char *argv[]) {
 
   // Parse command line arguments
   int opt;
-  while ((opt = getopt(argc, argv, "-:")) != -1) {
+  static struct option long_options[] = {{"listprogs", no_argument, 0, 0},
+                                         {"prog", required_argument, 0, 0},
+                                         {0, 0, 0, 0}};
+
+  int option_index = 0;
+  while ((opt = getopt_long(argc, argv, "", long_options, &option_index)) !=
+         -1) {
     switch (opt) {
-      case 1:  // non-option argument
-        if (strcmp(optarg, "--listprogs") == 0) {
+      case 0:                     // long option
+        if (option_index == 0) {  // --listprogs
           printf("Available programs:\n");
           for (const auto &pair : progMap) {
             printf("  %s\n", pair.first.c_str());
           }
           exit(0);
         }
-        if (strcmp(optarg, "--prog") == 0) {
-          // Next argument should be the program name
-          if (optind < argc) {
-            std::string progName = argv[optind++];
-            auto it = progMap.find(progName);
-            if (it != progMap.end()) {
-              startProg = it->second;
-              printf("Starting with program: %s\n", progName.c_str());
-            } else {
-              printf("Unknown program: %s\n", progName.c_str());
-            }
+        if (option_index == 1) {  // --prog
+          std::string progName = optarg;
+          auto it = progMap.find(progName);
+          if (it != progMap.end()) {
+            startProg = it->second;
+            printf("Starting with program: %s\n", progName.c_str());
+          } else {
+            printf("Unknown program: %s\n", progName.c_str());
           }
         }
         break;
