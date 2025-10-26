@@ -1,8 +1,8 @@
-HWEEN_OBJS = hween.o perlin.o cmap.o
-
 SMI_LEDS_DIR = ~/src/smi_leds
 SMI_LEDS_INCLUDE = -I $(SMI_LEDS_DIR)/include
 SMI_LEDS_LIB = -L $(SMI_LEDS_DIR)/build -lsmi_leds
+
+HWEEN_OBJS = hween.o perlin.o cmap.o tree.o
 
 all: hween
 

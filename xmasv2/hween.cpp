@@ -25,6 +25,8 @@
 
 #define NUM_BUFFERS 3
 
+#define LED_BRIGHTNESS 16
+
 using namespace r3;
 
 struct TreeShader {

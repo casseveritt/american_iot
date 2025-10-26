@@ -1,0 +1,56 @@
+{
+    "version": "2.0.0",
+    "options": {
+        "cwd": "${workspaceFolder}/xmasv2"
+    },
+    "tasks": [
+        {
+            "label": "Build (make)",
+            "type": "shell",
+            "command": "make",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Build the project using make"
+        },
+        {
+            "label": "Build hween",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "hween"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Build the hween target"
+        },
+        {
+            "label": "Format code",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "format"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "detail": "Format code using clang-format"
+        },
+        {
+            "label": "Clean",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "clean"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "detail": "Clean build artifacts"
+        }
+    ]
+}
