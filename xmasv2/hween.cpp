@@ -1,3 +1,4 @@
+#include <getopt.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,6 +28,8 @@
 using namespace r3;
 
 ColorMap blueBlack;
+ColorMap halloween;
+ColorMap rgbcmy;
 
 typedef void (*PixelFunc)(std::span<PixInfo> pixInfo, uint8_t *buffer,
                           float t_s);
@@ -87,7 +90,7 @@ void mark_work_done(Work *w) {
   w->status = Done;
 }
 
-void color_pixels(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) {
+void hue_pixels(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) {
   for (auto p : pixInfo) {
     float theta = atan2(p.position.z, p.position.x) + M_PI;
     Vec3f rgb =
@@ -103,15 +106,31 @@ void color_pixels(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) {
   }
 }
 
-void noise_pixels(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) {
+struct NoiseProgOpts {
+  ColorMap colorMap;
+};
+
+void noise_pixels(NoiseProgOpts &opts, std::span<PixInfo> pixInfo,
+                  uint8_t *buffer, float t) {
   for (auto p : pixInfo) {
     Vec3f pp = p.position * 20;
     float noise =
         0.5f + 0.5f * ImprovedNoise::noise(pp.x, pp.y + t * 0.5, pp.z);
-    auto c = blueBlack.lookupClamped(noise);
+    auto c = opts.colorMap.lookupClamped(noise);
     set_color(buffer, p.index, c);
   }
 }
+
+void ice_noise(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) {
+  NoiseProgOpts opts = {blueBlack};
+  noise_pixels(opts, pixInfo, buffer, t);
+}
+
+void halloween_noise(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) {
+  NoiseProgOpts opts = {halloween};
+  noise_pixels(opts, pixInfo, buffer, t);
+}
+
 void show_strip_index(uint8_t *buffer) {
   for (int strip = 0; strip < STRIPS; strip++) {
     uint8_t *pixels = buffer + (strip * PIXELS_PER_STRIP * 3);
@@ -148,6 +167,45 @@ void init() {
   blueBlack.addColor(BLACK);
   blueBlack.addColor(BLACK);
   blueBlack.addColor(BLACK);
+
+  auto orange = ORANGE * 0.0625f;
+  orange.y *= 0.5f;
+  halloween.addColor(orange);
+  halloween.addColor(orange);
+  halloween.addColor(PURPLE * 0.08f);
+  halloween.addColor(PURPLE * 0.08f);
+  halloween.addColor(orange);
+  halloween.addColor(orange);
+  halloween.addColor(orange);
+  halloween.addColor(orange);
+  halloween.addColor(orange);
+  halloween.addColor(orange);
+  halloween.addColor(orange);
+
+  rgbcmy.addColor(RED * 0.25f);
+  rgbcmy.addColor(RED * 0.25f);
+  rgbcmy.addColor(RED * 0.25f);
+  rgbcmy.addColor(RED * 0.25f);
+  rgbcmy.addColor(GREEN * 0.25f);
+  rgbcmy.addColor(GREEN * 0.25f);
+  rgbcmy.addColor(GREEN * 0.25f);
+  rgbcmy.addColor(GREEN * 0.25f);
+  rgbcmy.addColor(BLUE * 0.25f);
+  rgbcmy.addColor(BLUE * 0.25f);
+  rgbcmy.addColor(BLUE * 0.25f);
+  rgbcmy.addColor(BLUE * 0.25f);
+  rgbcmy.addColor(CYAN * 0.25f);
+  rgbcmy.addColor(CYAN * 0.25f);
+  rgbcmy.addColor(CYAN * 0.25f);
+  rgbcmy.addColor(CYAN * 0.25f);
+  rgbcmy.addColor(MAGENTA * 0.25f);
+  rgbcmy.addColor(MAGENTA * 0.25f);
+  rgbcmy.addColor(MAGENTA * 0.25f);
+  rgbcmy.addColor(MAGENTA * 0.25f);
+  rgbcmy.addColor(YELLOW * 0.25f);
+  rgbcmy.addColor(YELLOW * 0.25f);
+  rgbcmy.addColor(YELLOW * 0.25f);
+  rgbcmy.addColor(YELLOW * 0.25f);
 }
 
 int main(int argc, char *argv[]) {
@@ -168,16 +226,67 @@ int main(int argc, char *argv[]) {
   int64_t start = epoch;
   int64_t count = 0;
 
+  float progCycleTime = 180.0f;  // 3 minutes per program...
+  std::vector<PixelFunc> pixelFuncs = {ice_noise, halloween_noise, hue_pixels};
+  auto randomPixelFunc = [&pixelFuncs]() {
+    return pixelFuncs[rand() % pixelFuncs.size()];
+  };
+
+  std::unordered_map<std::string, PixelFunc> pixelFuncMap = {
+      {"ice_noise", ice_noise},
+      {"halloween_noise", halloween_noise},
+      {"hue", hue_pixels}};
+
+  PixelFunc startPixelFunc = randomPixelFunc();
+
+  // Parse command line arguments
+  int opt;
+  while ((opt = getopt(argc, argv, "-:")) != -1) {
+    switch (opt) {
+      case 1:  // non-option argument
+        if (strcmp(optarg, "--listprogs") == 0) {
+          printf("Available programs:\n");
+          for (const auto &pair : pixelFuncMap) {
+            printf("  %s\n", pair.first.c_str());
+          }
+          exit(0);
+        }
+        if (strcmp(optarg, "--prog") == 0) {
+          // Next argument should be the program name
+          if (optind < argc) {
+            std::string progName = argv[optind++];
+            auto it = pixelFuncMap.find(progName);
+            if (it != pixelFuncMap.end()) {
+              startPixelFunc = it->second;
+              printf("Starting with program: %s\n", progName.c_str());
+            } else {
+              printf("Unknown program: %s\n", progName.c_str());
+            }
+          }
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
   std::thread t1(worker, 1);
   std::thread t2(worker, 2);
   // std::thread t3(worker, 3);
+  float prev_t_s = 0.0f;
+  PixelFunc pixelFunc = startPixelFunc;
+
   while (true) {
     uint64_t t_ns = get_time_nsec() - epoch;
     float t_s = t_ns * 1e-9;
 
     uint8_t *buffer = buffers[count % NUM_BUFFERS];
 
-    Work w = {noise_pixels, pixInfo, buffer, t_s};
+    if (int(t_s / progCycleTime) != int(prev_t_s / progCycleTime)) {
+      pixelFunc = randomPixelFunc();
+    }
+
+    Work w = {pixelFunc, pixInfo, buffer, t_s};
 
     push_work(w);
 
@@ -212,6 +321,7 @@ int main(int argc, char *argv[]) {
       printf("fps = %d\n", int(1000 / delta));
       start = end;
     }
-    usleep(3000);
+    usleep(1500);
+    prev_t_s = t_s;
   }
 }
