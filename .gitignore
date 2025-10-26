@@ -1,0 +1,37 @@
+# Build artifacts
+
+*.o
+
+*.a
+*.so
+*.so.*
+*.dylib
+
+# Executables
+hween
+example
+smi_test
+
+# IDE and editor files
+.vscode/settings.json
+.vscode/launch.json
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Build directories
+build/
+dist/
