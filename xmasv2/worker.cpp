@@ -28,7 +28,6 @@ std::optional<Work> pop_work() {
     return {};
   }
   auto work = workQueue.front();
-  // printf("pop_work() status = %d\n", int(work.status));
   if (work.status != Done) {
     return {};
   }
@@ -62,7 +61,6 @@ void worker(int id) {
     if (work) {
       auto &w = *work.value();
       w.shader->shade(w.pixInfo, w.buffer, w.t_s);
-      w.status = Done;
       mark_work_done(&w);
     } else {
       usleep(100);
@@ -71,6 +69,7 @@ void worker(int id) {
 }
 
 void add_worker(int id) {
+  std::scoped_lock lock(workMutex);
   std::thread t(worker, id);
   t.detach();
 }

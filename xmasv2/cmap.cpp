@@ -82,7 +82,7 @@ void init_cmaps() {
 
   sparkle[0].clear();
   sparkle[0].addColor(WHITE);
-  sparkle[0].addColor(YELLOW * 0.0625f);
+  sparkle[0].addColor(YELLOW * 0.25f);
   sparkle[0].addColor(orange);
   sparkle[0].addColor(RED * 0.03125f);
   sparkle[0].addColor(BLACK);

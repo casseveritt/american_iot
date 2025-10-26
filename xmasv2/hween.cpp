@@ -68,35 +68,32 @@ struct NoiseShader : public TreeShader {
   }
 };
 
-struct SparkleState {
-  float sparkleTime = 0.0f;
-  float sparkleDelay = 0.0f;
-};
+struct EiffelShader : public TreeShader {
+  struct SparkleState {
+    float sparkleStart = -5.0f;
+  };
 
-#if 0
-void eiffel(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) {
-  static float old_t = 0.0f;
-  float dt = t - old_t;
-  int dt = frameTime.dt();
-  int modeMs = frameTime.t0() - newProgStartMs;
-  int cmap = (newProgStartMs & 128) > 0 ? 1 : 0;
-
-  for (auto &li : led) {
-    const int i = li.index;
-    float t = 0.25f + sparkleTime[i] / 1000.0f;  // nominal sparkle duration
-    strip[i] = sparkle[cmap].lookup(t);
-    sparkleTime[i] += dt;
-    if (sparkleTime[i] >= sparkleDelay[i]) {
-      sparkleTime[i] = 0;
-      sparkleDelay[i] = (rand() % (3000 - 1000 + 1)) + 1000;
+  EiffelShader(int numPixels) { sparkleStates.resize(numPixels); }
+  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
+    int count = 0;
+    for (auto p : pixInfo) {
+      auto &state = sparkleStates[count++];
+      const float nominalSparkleDuration = 0.5f;  // in seconds
+      float dt = t - state.sparkleStart;
+      if (dt > nominalSparkleDuration) {
+        state.sparkleStart = t + (rand() % 5000) * 0.001f;  // 0-5 seconds
+      }
+      dt = t - state.sparkleStart;
+      Color color = BLACK;
+      if (dt >= 0.0f) {
+        float sparkleProgress = dt / nominalSparkleDuration;
+        color = sparkle[0].lookupClamped(sparkleProgress);
+      }
+      set_color(buffer, p.index, color);
     }
   }
-  if (modeMs < 2000) {
-    clear(CRGB::Black);
-  }
-  old_t = t;
-}
-#endif
+  std::vector<SparkleState> sparkleStates;
+};
 
 void show_strip_index(uint8_t *buffer) {
   for (int strip = 0; strip < STRIPS; strip++) {
@@ -131,9 +128,11 @@ int main(int argc, char *argv[]) {
   HueShader hueShader;
   NoiseShader iceShader(blueBlack, 20.0f, 0.5f);
   NoiseShader halloweenShader(halloween, 5.0f, 0.7f);
+  EiffelShader eiffelShader(pixInfo.size());
 
   float progCycleTime = 180.0f;  // 3 minutes per program...
-  std::vector<TreeShader *> progs = {&iceShader, &halloweenShader, &hueShader};
+  std::vector<TreeShader *> progs = {&iceShader, &halloweenShader, &hueShader,
+                                     &eiffelShader};
   auto randomProg = [&progs]() -> TreeShader * {
     return progs[rand() % progs.size()];
   };
@@ -141,7 +140,8 @@ int main(int argc, char *argv[]) {
   std::unordered_map<std::string, TreeShader *> progMap = {
       {"ice_noise", &iceShader},
       {"halloween_noise", &halloweenShader},
-      {"hue", &hueShader}};
+      {"hue", &hueShader},
+      {"eiffel", &eiffelShader}};
 
   TreeShader *startProg = randomProg();
 
@@ -180,7 +180,7 @@ int main(int argc, char *argv[]) {
   }
 
   add_worker(1);
-  add_worker(2);
+  // add_worker(2);
   float prev_t_s = 0.0f;
   TreeShader *prog = startProg;
 

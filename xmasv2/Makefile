@@ -7,9 +7,9 @@ HWEEN_OBJS = hween.o perlin.o cmap.o tree.o worker.o
 all: hween
 
 hween: $(HWEEN_OBJS) tree.h color.h Makefile
-	g++ -std=c++20 $(HWEEN_OBJS) $(SMI_LEDS_LIB) -o hween -O2
+	g++ -std=c++20 $(HWEEN_OBJS) $(SMI_LEDS_LIB) -o hween -g
 
-%.o: %.cpp
+%.o: %.cpp Makefile
 	g++ -std=c++20 $(SMI_LEDS_INCLUDE) -c $< -o $@
 
 format:
