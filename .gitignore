@@ -34,4 +34,4 @@ Thumbs.db
 
 # Build directories
 build/
-dist/
+.cache/

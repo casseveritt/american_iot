@@ -1,46 +1,15 @@
 {
-    "C_Cpp.intelliSenseEngine": "default",
-    "C_Cpp.errorSquiggles": "enabled",
-    "C_Cpp.default.cppStandard": "c++20",
-    "C_Cpp.default.cStandard": "c17",
-    "C_Cpp.default.compilerPath": "/usr/bin/g++",
-    "C_Cpp.default.includePath": [
-        "${workspaceFolder}/**",
-        "/home/cass/src/smi_leds/include"
-    ],
-    "C_Cpp.default.defines": [
-        "STRIPS=16",
-        "PIXELS_PER_STRIP=320"
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "clangd.path": "/usr/bin/clangd",
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}/xmasv2",
+        "--clang-tidy",
+        "--completion-style=detailed",
+        "--header-insertion=iwyu"
     ],
     "files.associations": {
         "*.h": "cpp",
         "*.cpp": "cpp",
         "*.hpp": "cpp"
-    },
-    "outline.showArrays": true,
-    "outline.showBooleans": true,
-    "outline.showClasses": true,
-    "outline.showConstants": true,
-    "outline.showConstructors": true,
-    "outline.showEnumMembers": true,
-    "outline.showEnums": true,
-    "outline.showEvents": true,
-    "outline.showFields": true,
-    "outline.showFiles": true,
-    "outline.showFunctions": true,
-    "outline.showInterfaces": true,
-    "outline.showKeys": true,
-    "outline.showMethods": true,
-    "outline.showModules": true,
-    "outline.showNamespaces": true,
-    "outline.showNull": true,
-    "outline.showNumbers": true,
-    "outline.showObjects": true,
-    "outline.showOperators": true,
-    "outline.showPackages": true,
-    "outline.showProperties": true,
-    "outline.showStrings": true,
-    "outline.showStructs": true,
-    "outline.showTypeParameters": true,
-    "outline.showVariables": true
+    }
 }

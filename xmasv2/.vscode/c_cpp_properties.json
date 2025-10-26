@@ -4,19 +4,26 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/xmasv2",
-                "/home/cass/src/smi_leds/include"
+                "/home/cass/src/smi_leds/include",
+                "/usr/include",
+                "/usr/include/c++/14"
             ],
             "defines": [
-                "_GNU_SOURCE",
                 "STRIPS=16",
                 "PIXELS_PER_STRIP=320"
             ],
             "compilerPath": "/usr/bin/g++",
             "cStandard": "c17",
             "cppStandard": "c++20",
-            "intelliSenseMode": "linux-gcc-x64",
-            "compileCommands": "${workspaceFolder}/xmasv2/compile_commands.json"
+            "intelliSenseMode": "linux-gcc-arm",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/**",
+                    "/home/cass/src/smi_leds/include"
+                ],
+                "limitSymbolsToIncludedHeaders": false,
+                "databaseFilename": ""
+            }
         }
     ],
     "version": 4

@@ -1,0 +1,16 @@
+CompileFlags:
+  Add: 
+    - -std=c++20
+    - -I/home/cass/src/smi_leds/include
+  Remove:
+    - -march=*
+    - -mtune=*
+
+Index:
+  Background: Build
+
+Diagnostics:
+  ClangTidy:
+    Add: '*'
+    Remove: 
+      - modernize-use-trailing-return-type
