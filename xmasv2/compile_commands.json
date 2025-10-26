@@ -1,0 +1,32 @@
+[
+    {
+        "directory": "/home/cass/src/american_iot/xmasv2",
+        "command": "g++ -std=c++20 -I /home/cass/src/smi_leds/include -c hween.cpp -o hween.o",
+        "file": "/home/cass/src/american_iot/xmasv2/hween.cpp"
+    },
+    {
+        "directory": "/home/cass/src/american_iot/xmasv2",
+        "command": "g++ -std=c++20 -I /home/cass/src/smi_leds/include -c perlin.cpp -o perlin.o",
+        "file": "/home/cass/src/american_iot/xmasv2/perlin.cpp"
+    },
+    {
+        "directory": "/home/cass/src/american_iot/xmasv2",
+        "command": "g++ -std=c++20 -I /home/cass/src/smi_leds/include -c cmap.cpp -o cmap.o",
+        "file": "/home/cass/src/american_iot/xmasv2/cmap.cpp"
+    },
+    {
+        "directory": "/home/cass/src/american_iot/xmasv2",
+        "command": "g++ -std=c++20 -I /home/cass/src/smi_leds/include -c tree.cpp -o tree.o",
+        "file": "/home/cass/src/american_iot/xmasv2/tree.cpp"
+    },
+    {
+        "directory": "/home/cass/src/american_iot/xmasv2",
+        "command": "g++ -std=c++20 -I /home/cass/src/smi_leds/include -c example.cpp -o example.o",
+        "file": "/home/cass/src/american_iot/xmasv2/example.cpp"
+    },
+    {
+        "directory": "/home/cass/src/american_iot/xmasv2",
+        "command": "g++ -std=c++20 -I /home/cass/src/smi_leds/include -c o_xmas_cone.cpp -o o_xmas_cone.o",
+        "file": "/home/cass/src/american_iot/xmasv2/o_xmas_cone.cpp"
+    }
+]
