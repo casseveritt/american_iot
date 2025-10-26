@@ -1,11 +1,16 @@
+HWEEN_OBJS = hween.o perlin.o cmap.o
+
+SMI_LEDS_DIR = ~/src/smi_leds
+SMI_LEDS_INCLUDE = -I $(SMI_LEDS_DIR)/include
+SMI_LEDS_LIB = -L $(SMI_LEDS_DIR)/build -lsmi_leds
 
 all: hween
 
-hween: hween.cpp tree.h color.h Makefile perlin.o
-	g++ -std=c++20 hween.cpp -L ~/src/smi_leds/build -lsmi_leds -I ~/src/smi_leds/include perlin.o -o hween -O2
+hween: $(HWEEN_OBJS) tree.h color.h Makefile
+	g++ -std=c++20 $(HWEEN_OBJS) $(SMI_LEDS_LIB) -o hween -O2
 
-perlin.o:
-	g++ -std=c++20 -c perlin.cpp
+%.o: %.cpp
+	g++ -std=c++20 $(SMI_LEDS_INCLUDE) -c $< -o $@
 
 format:
 	clang-format -i hween.cpp
@@ -19,4 +24,5 @@ format:
 clean:
 	rm -f hween
 	rm -f example
+	rm -f $(HWEEN_OBJS)
 
