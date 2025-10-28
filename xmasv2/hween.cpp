@@ -127,6 +127,7 @@ int main(int argc, char *argv[]) {
 
   HueShader hueShader;
   NoiseShader iceShader(blueBlack, 20.0f, 0.5f);
+  NoiseShader redWhiteShader(cm[0], 25.0f, 0.15f);
   NoiseShader halloweenShader(halloween, 5.0f, 0.7f);
   EiffelShader eiffelShader(pixInfo.size());
 
@@ -139,6 +140,7 @@ int main(int argc, char *argv[]) {
 
   std::unordered_map<std::string, TreeShader *> progMap = {
       {"ice_noise", &iceShader},
+      {"red_white_noise", &redWhiteShader},
       {"halloween_noise", &halloweenShader},
       {"hue", &hueShader},
       {"eiffel", &eiffelShader}};

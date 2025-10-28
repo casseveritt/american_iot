@@ -41,5 +41,6 @@ extern ColorMap halloween;
 extern ColorMap rgbcmy;
 extern ColorMap maroonWhite;
 extern ColorMap sparkle[2];
+extern ColorMap cm[2];
 
 void init_cmaps();

@@ -36,7 +36,7 @@ static const Color ORANGE(1.0f, 0.647f, 0.0f);
 static const Color PURPLE(0.5f, 0.0f, 0.5f);
 static const Color PINK(1.0f, 0.753f, 0.796f);
 static const Color BROWN(0.647f, 0.165f, 0.165f);
-static const Color GRAY(0.5f, 0.5f, 0.5f);
+static const Color GREY(0.5f, 0.5f, 0.5f);
 static const Color SILVER(0.753f, 0.753f, 0.753f);
 static const Color GOLD(1.0f, 0.843f, 0.0f);
 

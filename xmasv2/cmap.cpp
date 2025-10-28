@@ -5,6 +5,7 @@ ColorMap halloween;
 ColorMap rgbcmy;
 ColorMap maroonWhite;
 ColorMap sparkle[2];
+ColorMap cm[2];
 
 void init_cmaps() {
   blueBlack.addColor(BLUE * 0.25f);
@@ -63,7 +64,7 @@ void init_cmaps() {
   rgbcmy.addColor(YELLOW * 0.25f);
   rgbcmy.addColor(YELLOW * 0.25f);
 
-  maroonWhite.addColor(WHITE * 0.0625);
+  maroonWhite.addColor(WHITE * 0.25);
   maroonWhite.addColor(WHITE * 0.0625);
   maroonWhite.addColor(WHITE * 0.0625);
   maroonWhite.addColor(WHITE * 0.0625);
@@ -93,4 +94,27 @@ void init_cmaps() {
   sparkle[1].addColor(BLUE_VIOLET * 0.0625f);
   sparkle[1].addColor(BLUE * 0.0625f);
   sparkle[1].addColor(BLACK);
+
+  cm[0].addColor(MAROON * 0.125f);
+  cm[0].addColor(MAROON * 0.25f);
+  cm[0].addColor(GREY * 0.125f);
+  cm[0].addColor(MAROON * 0.125f);
+  cm[0].addColor(MAROON * 0.125f);
+  cm[0].addColor(GREY * 0.125f);
+  cm[0].addColor(BLACK);
+  cm[0].addColor(WHITE * 0.25f);
+  cm[0].addColor(BLACK);
+  cm[0].addColor(MAROON * 0.125f);
+
+  cm[1].addColor(BLUE * 0.125f);
+  cm[1].addColor(BLUE * 0.125f);
+  cm[1].addColor(BLUE * 0.03125f);
+  cm[1].addColor(GREY * 0.03125f);
+  cm[1].addColor(BLUE * 0.03125f);
+  cm[1].addColor(BLUE * 0.125f);
+  cm[1].addColor(GREY * 0.03125f);
+  cm[1].addColor(BLACK);
+  cm[1].addColor(WHITE * 0.25f);
+  cm[1].addColor(CYAN * 0.125f);
+  cm[1].addColor(BLACK);
 }
