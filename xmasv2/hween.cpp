@@ -219,7 +219,11 @@ int main(int argc, char *argv[]) {
     // show_strip_index(buffer);
 
     // Send the buffer to the SMI buffer
-    leds_set(buffer);
+    if ((count % 1) == 0) {
+      leds_set(buffer);
+    } else {
+      leds_clear();
+    }
 
     // Actually send them to the LEDs:
     leds_send();
@@ -231,7 +235,7 @@ int main(int argc, char *argv[]) {
       printf("fps = %d\n", int(1000 / delta));
       start = end;
     }
-    usleep(1500);
+    usleep(3000);
     prev_t_s = t_s;
   }
 }
