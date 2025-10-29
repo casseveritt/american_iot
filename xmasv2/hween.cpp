@@ -6,6 +6,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <optional>
 #include <span>
 #include <string>
@@ -25,6 +26,8 @@
 #define NUM_BUFFERS 3
 
 #define LED_BRIGHTNESS 16
+
+constexpr float k2pi = 2.0f * M_PI;
 
 using namespace r3;
 
@@ -95,15 +98,32 @@ struct EiffelShader : public TreeShader {
   std::vector<SparkleState> sparkleStates;
 };
 
-void show_strip_index(uint8_t *buffer) {
-  for (int strip = 0; strip < STRIPS; strip++) {
-    uint8_t *pixels = buffer + (strip * PIXELS_PER_STRIP * 3);
-    Vec3f color = rgb_from_hsv(Vec3f(float(strip) / STRIPS, 1.0f, 1.0f));
-    for (int led = 0; led < PIXELS_PER_STRIP; led++) {
-      set_color(buffer, strip * PIXELS_PER_STRIP + led, color);
+struct RotYShader : public TreeShader {
+  const Vec3f center = {0.0f, 0.75f, 0.0f};
+
+  const int n = 8;  // number of sections
+  const float secPerRev = 32.0f;
+  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
+    // make a function that is sloped, then flat for a bit, then sloped, etc.
+
+    for (const auto &p : pixInfo) {
+      Vec3f pos = p.position - center;
+      // the difference in time between the first and last pixel transitions
+      // is phase seconds...
+      float phase = 0.5f * (atan2(pos.x, pos.z) / k2pi + 0.5f);
+      const float revProgress = fmod((t + phase) / secPerRev, 1.0f);
+      const float sectionWidth = 1.0f / n;
+      const float slope = 4.0f;
+      const float sectionStep = floor(revProgress * n);
+      const float sectionProgress =
+          std::min(fmod(revProgress * n, 1.0f) * slope, 1.0f);
+      const float rev = (sectionStep + sectionProgress) * sectionWidth;
+
+      Color color = rgbcmy.lookupWrapped(rev + t * 0.001321f);
+      set_color(buffer, p.index, color);
     }
   }
-}
+};
 
 }  // namespace
 
@@ -130,10 +150,11 @@ int main(int argc, char *argv[]) {
   NoiseShader redWhiteShader(cm[0], 25.0f, 0.15f);
   NoiseShader halloweenShader(halloween, 5.0f, 0.7f);
   EiffelShader eiffelShader(pixInfo.size());
+  RotYShader rotYShader;
 
   float progCycleTime = 180.0f;  // 3 minutes per program...
   std::vector<TreeShader *> progs = {&iceShader, &halloweenShader, &hueShader,
-                                     &eiffelShader};
+                                     &eiffelShader, &rotYShader};
   auto randomProg = [&progs]() -> TreeShader * {
     return progs[rand() % progs.size()];
   };
@@ -143,7 +164,8 @@ int main(int argc, char *argv[]) {
       {"red_white_noise", &redWhiteShader},
       {"halloween_noise", &halloweenShader},
       {"hue", &hueShader},
-      {"eiffel", &eiffelShader}};
+      {"eiffel", &eiffelShader},
+      {"rot_y", &rotYShader}};
 
   TreeShader *startProg = randomProg();
 
