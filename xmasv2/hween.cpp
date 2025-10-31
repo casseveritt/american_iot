@@ -125,6 +125,29 @@ struct RotYShader : public TreeShader {
   }
 };
 
+struct Twist : public TreeShader {
+  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
+    constexpr int twistPeriod = 12.0f;  // seconds
+    float twistRevsPerMeter =
+        2.5f * sin(k2pi * (fmod(t / twistPeriod, 1.0f)) + 1.0);
+
+    auto &cmap = blueBlack;
+
+    constexpr float secondsPerRev = 1.0f;
+    const float baseRevs = fmod(t / secondsPerRev, 1.0f);
+
+    for (const auto &pix : pixInfo) {
+      Vec3f p = pix.position;
+      p = Rotationf(Vec3f(0, 1, 0),
+                    k2pi * (-twistRevsPerMeter * p.y + baseRevs))
+              .Rotate(p);
+      float theta = atan2(p.x, p.z) / k2pi + 0.5f;
+      auto color = cmap.lookupWrapped(theta);
+      set_color(buffer, pix.index, color);
+    }
+  }
+};
+
 }  // namespace
 
 int main(int argc, char *argv[]) {
@@ -151,6 +174,7 @@ int main(int argc, char *argv[]) {
   NoiseShader halloweenShader(halloween, 5.0f, 0.7f);
   EiffelShader eiffelShader(pixInfo.size());
   RotYShader rotYShader;
+  Twist twistShader;
 
   float progCycleTime = 180.0f;  // 3 minutes per program...
   std::vector<TreeShader *> progs = {&iceShader, &halloweenShader, &hueShader,
@@ -165,7 +189,8 @@ int main(int argc, char *argv[]) {
       {"halloween_noise", &halloweenShader},
       {"hue", &hueShader},
       {"eiffel", &eiffelShader},
-      {"rot_y", &rotYShader}};
+      {"rot_y", &rotYShader},
+      {"twist", &twistShader}};
 
   TreeShader *startProg = randomProg();
 
