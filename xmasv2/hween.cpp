@@ -77,20 +77,32 @@ struct EiffelShader : public TreeShader {
   };
 
   EiffelShader(int numPixels) { sparkleStates.resize(numPixels); }
+  ColorMap *cmap;
+  void init(float t) override {
+    union FloatInt {
+      float f;
+      uint32_t i;
+    };
+    FloatInt fi;
+    fi.f = t;
+    uint32_t idx = fi.i % 19213;
+    cmap = &sparkle[idx & 1];
+  }
   void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
     int count = 0;
+
     for (auto p : pixInfo) {
       auto &state = sparkleStates[count++];
-      const float nominalSparkleDuration = 0.5f;  // in seconds
+      const float nominalSparkleDuration = 0.45f;  // in seconds
       float dt = t - state.sparkleStart;
       if (dt > nominalSparkleDuration) {
-        state.sparkleStart = t + (rand() % 5000) * 0.001f;  // 0-5 seconds
+        state.sparkleStart = t + (rand() % 8000) * 0.001f;  // 0-5 seconds
       }
       dt = t - state.sparkleStart;
       Color color = BLACK;
       if (dt >= 0.0f) {
         float sparkleProgress = dt / nominalSparkleDuration;
-        color = sparkle[0].lookupClamped(sparkleProgress);
+        color = cmap->lookupClamped(sparkleProgress);
       }
       set_color(buffer, p.index, color);
     }
@@ -193,7 +205,6 @@ int main(int argc, char *argv[]) {
       {"twist", &twistShader}};
 
   TreeShader *startProg = randomProg();
-
   // Parse command line arguments
   int opt;
   static struct option long_options[] = {{"listprogs", no_argument, 0, 0},
@@ -232,6 +243,7 @@ int main(int argc, char *argv[]) {
   // add_worker(2);
   float prev_t_s = 0.0f;
   TreeShader *prog = startProg;
+  prog->init(epoch);
 
   while (true) {
     uint64_t t_ns = get_time_nsec() - epoch;
@@ -241,6 +253,7 @@ int main(int argc, char *argv[]) {
 
     if (int(t_s / progCycleTime) != int(prev_t_s / progCycleTime)) {
       prog = randomProg();
+      prog->init(t_s);
     }
 
     Work w = {prog, pixInfo, buffer, t_s};
