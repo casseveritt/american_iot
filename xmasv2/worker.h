@@ -10,7 +10,7 @@ enum Status { Waiting, Processing, Done };
 
 struct TreeShader {
   virtual ~TreeShader() = default;
-  virtual void init(float t) {}
+  virtual void init(std::span<PixInfo> pixInfo, float t) {}
   virtual void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) = 0;
 };
 

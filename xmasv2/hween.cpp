@@ -52,6 +52,28 @@ struct HueShader : public TreeShader {
   }
 };
 
+struct RandShader : public TreeShader {
+  std::vector<Color> colors;
+
+  void init(std::span<PixInfo> pixInfo, float t) override {
+    colors.resize(pixInfo.size());
+  }
+
+  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
+    int idx = 0;
+    Color randomColor(rand() / float(RAND_MAX), rand() / float(RAND_MAX),
+                      rand() / float(RAND_MAX));
+    int randomIndex = rand() % colors.size();
+    colors[randomIndex] = randomColor;
+
+    for (auto p : pixInfo) {
+      Color &c = colors[idx];
+      set_color(buffer, p.index, c);
+      idx++;
+    }
+  }
+};
+
 struct NoiseShader : public TreeShader {
   const ColorMap &colorMap;
   float scale;
@@ -78,7 +100,7 @@ struct EiffelShader : public TreeShader {
 
   EiffelShader(int numPixels) { sparkleStates.resize(numPixels); }
   ColorMap *cmap;
-  void init(float t) override {
+  void init(std::span<PixInfo> pixInfo, float t) override {
     union FloatInt {
       float f;
       uint32_t i;
@@ -185,12 +207,14 @@ int main(int argc, char *argv[]) {
   NoiseShader redWhiteShader(cm[0], 25.0f, 0.15f);
   NoiseShader halloweenShader(halloween, 5.0f, 0.7f);
   EiffelShader eiffelShader(pixInfo.size());
+  RandShader randomShader;
   RotYShader rotYShader;
   Twist twistShader;
 
   float progCycleTime = 180.0f;  // 3 minutes per program...
-  std::vector<TreeShader *> progs = {&iceShader, &halloweenShader, &hueShader,
-                                     &eiffelShader, &rotYShader};
+  std::vector<TreeShader *> progs = {
+      &iceShader,    &redWhiteShader, &halloweenShader, &hueShader,
+      &eiffelShader, &rotYShader,     &randomShader,    &twistShader};
   auto randomProg = [&progs]() -> TreeShader * {
     return progs[rand() % progs.size()];
   };
@@ -201,6 +225,7 @@ int main(int argc, char *argv[]) {
       {"halloween_noise", &halloweenShader},
       {"hue", &hueShader},
       {"eiffel", &eiffelShader},
+      {"random", &randomShader},
       {"rot_y", &rotYShader},
       {"twist", &twistShader}};
 
@@ -243,7 +268,7 @@ int main(int argc, char *argv[]) {
   // add_worker(2);
   float prev_t_s = 0.0f;
   TreeShader *prog = startProg;
-  prog->init(epoch);
+  prog->init(pixInfo, epoch);
 
   while (true) {
     uint64_t t_ns = get_time_nsec() - epoch;
@@ -253,7 +278,7 @@ int main(int argc, char *argv[]) {
 
     if (int(t_s / progCycleTime) != int(prev_t_s / progCycleTime)) {
       prog = randomProg();
-      prog->init(t_s);
+      prog->init(pixInfo, t_s);
     }
 
     Work w = {prog, pixInfo, buffer, t_s};
