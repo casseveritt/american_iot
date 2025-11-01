@@ -57,12 +57,18 @@ struct RandShader : public TreeShader {
 
   void init(std::span<PixInfo> pixInfo, float t) override {
     colors.resize(pixInfo.size());
+    for (auto &c : colors) {
+      c = BLACK;
+    }
   }
 
   void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
     int idx = 0;
     Color randomColor(rand() / float(RAND_MAX), rand() / float(RAND_MAX),
                       rand() / float(RAND_MAX));
+    randomColor.x = pow(randomColor.x, 4.2f);
+    randomColor.y = pow(randomColor.y, 4.2f);
+    randomColor.z = pow(randomColor.z, 4.2f);
     int randomIndex = rand() % colors.size();
     colors[randomIndex] = randomColor;
 
