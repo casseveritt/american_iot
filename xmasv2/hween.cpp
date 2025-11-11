@@ -54,6 +54,11 @@ struct HueShader : public TreeShader {
 
 struct RandShader : public TreeShader {
   std::vector<Color> colors;
+  float fracOn = 1.00f;
+  float power = 4.2f;
+
+  RandShader(float fracOnIn = 1.0f, float powerIn = 4.2f)
+      : fracOn(fracOnIn), power(powerIn) {}
 
   void init(std::span<PixInfo> pixInfo, float t) override {
     colors.resize(pixInfo.size());
@@ -64,11 +69,15 @@ struct RandShader : public TreeShader {
 
   void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
     int idx = 0;
-    Color randomColor(rand() / float(RAND_MAX), rand() / float(RAND_MAX),
-                      rand() / float(RAND_MAX));
-    randomColor.x = pow(randomColor.x, 4.2f);
-    randomColor.y = pow(randomColor.y, 4.2f);
-    randomColor.z = pow(randomColor.z, 4.2f);
+    float onRand = rand() / float(RAND_MAX);
+    Color randomColor = BLACK;
+    if (onRand <= fracOn) {
+      randomColor = Color(rand() / float(RAND_MAX), rand() / float(RAND_MAX),
+                          rand() / float(RAND_MAX));
+      randomColor.x = pow(randomColor.x, power);
+      randomColor.y = pow(randomColor.y, power);
+      randomColor.z = pow(randomColor.z, power);
+    }
     int randomIndex = rand() % colors.size();
     colors[randomIndex] = randomColor;
 
@@ -214,13 +223,15 @@ int main(int argc, char *argv[]) {
   NoiseShader halloweenShader(halloween, 5.0f, 0.7f);
   EiffelShader eiffelShader(pixInfo.size());
   RandShader randomShader;
+  RandShader random2Shader(0.25f, 8.0f);
   RotYShader rotYShader;
   Twist twistShader;
 
   float progCycleTime = 180.0f;  // 3 minutes per program...
   std::vector<TreeShader *> progs = {
-      &iceShader,    &redWhiteShader, &halloweenShader, &hueShader,
-      &eiffelShader, &rotYShader,     &randomShader,    &twistShader};
+      &iceShader,    &redWhiteShader, &halloweenShader,
+      &hueShader,    &eiffelShader,   &rotYShader,
+      &randomShader, &random2Shader,  &twistShader};
   auto randomProg = [&progs]() -> TreeShader * {
     return progs[rand() % progs.size()];
   };
@@ -232,6 +243,7 @@ int main(int argc, char *argv[]) {
       {"hue", &hueShader},
       {"eiffel", &eiffelShader},
       {"random", &randomShader},
+      {"random2", &random2Shader},
       {"rot_y", &rotYShader},
       {"twist", &twistShader}};
 
@@ -240,6 +252,7 @@ int main(int argc, char *argv[]) {
   int opt;
   static struct option long_options[] = {{"listprogs", no_argument, 0, 0},
                                          {"prog", required_argument, 0, 0},
+                                         {"cycletime", required_argument, 0, 0},
                                          {0, 0, 0, 0}};
 
   int option_index = 0;
@@ -263,6 +276,11 @@ int main(int argc, char *argv[]) {
           } else {
             printf("Unknown program: %s\n", progName.c_str());
           }
+        }
+        if (option_index == 2) {  // --cycletime
+          float cycleTime = std::stof(optarg);
+          progCycleTime = cycleTime;
+          printf("Setting program cycle time: %f\n", cycleTime);
         }
         break;
       default:
