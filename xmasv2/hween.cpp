@@ -113,18 +113,11 @@ struct EiffelShader : public TreeShader {
     float sparkleStart = -5.0f;
   };
 
-  EiffelShader(int numPixels) { sparkleStates.resize(numPixels); }
-  ColorMap *cmap;
-  void init(std::span<PixInfo> pixInfo, float t) override {
-    union FloatInt {
-      float f;
-      uint32_t i;
-    };
-    FloatInt fi;
-    fi.f = t;
-    uint32_t idx = fi.i % 19213;
-    cmap = &sparkle[idx & 1];
+  EiffelShader(int numPixels, const ColorMap &cmapIn) : cmap(cmapIn) {
+    sparkleStates.resize(numPixels);
   }
+  const ColorMap &cmap;
+  void init(std::span<PixInfo> pixInfo, float t) override {}
   void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
     int count = 0;
 
@@ -139,7 +132,7 @@ struct EiffelShader : public TreeShader {
       Color color = BLACK;
       if (dt >= 0.0f) {
         float sparkleProgress = dt / nominalSparkleDuration;
-        color = cmap->lookupClamped(sparkleProgress);
+        color = cmap.lookupClamped(sparkleProgress);
       }
       set_color(buffer, p.index, color);
     }
@@ -221,7 +214,8 @@ int main(int argc, char *argv[]) {
   NoiseShader iceShader(blueBlack, 20.0f, 0.5f);
   NoiseShader redWhiteShader(cm[0], 25.0f, 0.15f);
   NoiseShader halloweenShader(halloween, 5.0f, 0.7f);
-  EiffelShader eiffelShader(pixInfo.size());
+  EiffelShader eiffelShaderLucas(pixInfo.size(), sparkle[0]);
+  EiffelShader eiffelShaderCass(pixInfo.size(), sparkle[1]);
   RandShader randomShader;
   RandShader random2Shader(0.25f, 8.0f);
   RotYShader rotYShader;
@@ -229,9 +223,9 @@ int main(int argc, char *argv[]) {
 
   float progCycleTime = 180.0f;  // 3 minutes per program...
   std::vector<TreeShader *> progs = {
-      &iceShader,    &redWhiteShader, &halloweenShader,
-      &hueShader,    &eiffelShader,   &rotYShader,
-      &randomShader, &random2Shader,  &twistShader};
+      &iceShader,         &redWhiteShader,   &halloweenShader, &hueShader,
+      &eiffelShaderLucas, &eiffelShaderCass, &rotYShader,      &randomShader,
+      &random2Shader,     &twistShader};
   auto randomProg = [&progs]() -> TreeShader * {
     return progs[rand() % progs.size()];
   };
@@ -241,7 +235,8 @@ int main(int argc, char *argv[]) {
       {"red_white_noise", &redWhiteShader},
       {"halloween_noise", &halloweenShader},
       {"hue", &hueShader},
-      {"eiffel", &eiffelShader},
+      {"eiffel_lucas", &eiffelShaderLucas},
+      {"eiffel_cass", &eiffelShaderCass},
       {"random", &randomShader},
       {"random2", &random2Shader},
       {"rot_y", &rotYShader},
