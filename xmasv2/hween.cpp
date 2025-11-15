@@ -34,7 +34,9 @@ using namespace r3;
 namespace {
 
 struct HueShader : public TreeShader {
-  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
+  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer,
+             uint64_t t_ns) override {
+    double t = t_ns * 1e-9;  // Convert to seconds
     for (auto p : pixInfo) {
       float theta = atan2(p.position.z, p.position.x) + M_PI;
       Vec3f rgb = rgb_from_hsv(
@@ -60,14 +62,16 @@ struct RandShader : public TreeShader {
   RandShader(float fracOnIn = 1.0f, float powerIn = 4.2f)
       : fracOn(fracOnIn), power(powerIn) {}
 
-  void init(std::span<PixInfo> pixInfo, float t) override {
+  void init(std::span<PixInfo> pixInfo, uint64_t t_ns) override {
     colors.resize(pixInfo.size());
     for (auto &c : colors) {
       c = BLACK;
     }
   }
 
-  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
+  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer,
+             uint64_t t_ns) override {
+    double t = t_ns * 1e-9;  // Convert to seconds
     int idx = 0;
     float onRand = rand() / float(RAND_MAX);
     Color randomColor = BLACK;
@@ -97,7 +101,9 @@ struct NoiseShader : public TreeShader {
   NoiseShader(const ColorMap &cmap, float scaleIn, float speedIn)
       : colorMap(cmap), scale(scaleIn), speed(speedIn) {}
 
-  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
+  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer,
+             uint64_t t_ns) override {
+    double t = t_ns * 1e-9;
     for (auto p : pixInfo) {
       Vec3f pp = p.position * scale;
       float noise =
@@ -117,8 +123,12 @@ struct EiffelShader : public TreeShader {
     sparkleStates.resize(numPixels);
   }
   const ColorMap &cmap;
-  void init(std::span<PixInfo> pixInfo, float t) override {}
-  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
+  void init(std::span<PixInfo> pixInfo, uint64_t t_ns) override {
+    double t = t_ns * 1e-9;
+  }
+  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer,
+             uint64_t t_ns) override {
+    double t = t_ns * 1e-9;
     int count = 0;
 
     for (auto p : pixInfo) {
@@ -145,7 +155,9 @@ struct RotYShader : public TreeShader {
 
   const int n = 8;  // number of sections
   const float secPerRev = 32.0f;
-  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
+  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer,
+             uint64_t t_ns) override {
+    double t = t_ns * 1e-9;
     // make a function that is sloped, then flat for a bit, then sloped, etc.
 
     for (const auto &p : pixInfo) {
@@ -168,7 +180,9 @@ struct RotYShader : public TreeShader {
 };
 
 struct Twist : public TreeShader {
-  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) override {
+  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer,
+             uint64_t t_ns) override {
+    double t = t_ns * 1e-9;
     constexpr int twistPeriod = 12.0f;  // seconds
     float twistRevsPerMeter =
         2.5f * sin(k2pi * (fmod(t / twistPeriod, 1.0f)) + 1.0);
@@ -297,10 +311,10 @@ int main(int argc, char *argv[]) {
 
     if (int(t_s / progCycleTime) != int(prev_t_s / progCycleTime)) {
       prog = randomProg();
-      prog->init(pixInfo, t_s);
+      prog->init(pixInfo, t_ns);
     }
 
-    Work w = {prog, pixInfo, buffer, t_s};
+    Work w = {prog, pixInfo, buffer, t_ns};
 
     push_work(w);
 

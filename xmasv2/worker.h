@@ -10,15 +10,16 @@ enum Status { Waiting, Processing, Done };
 
 struct TreeShader {
   virtual ~TreeShader() = default;
-  virtual void init(std::span<PixInfo> pixInfo, float t) {}
-  virtual void shade(std::span<PixInfo> pixInfo, uint8_t *buffer, float t) = 0;
+  virtual void init(std::span<PixInfo> pixInfo, uint64_t t_ns) {}
+  virtual void shade(std::span<PixInfo> pixInfo, uint8_t *buffer,
+                     uint64_t t_ns) = 0;
 };
 
 struct Work {
   TreeShader *shader;
   std::span<PixInfo> pixInfo;
   uint8_t *buffer;
-  float t_s;
+  uint64_t t_ns;
   Status status = Waiting;
 };
 

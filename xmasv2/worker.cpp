@@ -60,7 +60,7 @@ void worker(int id) {
     std::optional<Work *> work = fetch_work();
     if (work) {
       auto &w = *work.value();
-      w.shader->shade(w.pixInfo, w.buffer, w.t_s);
+      w.shader->shade(w.pixInfo, w.buffer, w.t_ns);
       mark_work_done(&w);
     } else {
       usleep(100);
