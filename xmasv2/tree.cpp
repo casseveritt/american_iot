@@ -50,6 +50,11 @@ std::vector<PixInfo> get_pix_info() {
         angle -= M_PI / BRANCHES_PER_RING;
       }
 
+      constexpr float angle_adj_deg[] = {0,    0,     -10.0f, 0,
+                                         0.0f, 10.0f, -5.0f,  9.0f};
+
+      angle += (angle_adj_deg[i] * M_PI) / 180.0;
+
       float branch_height =  // in meters
           0.0254 * branchHeightAtTrunkInches[i];
 

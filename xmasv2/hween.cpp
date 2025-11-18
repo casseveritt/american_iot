@@ -204,6 +204,27 @@ struct Twist : public TreeShader {
   }
 };
 
+struct Calib : public TreeShader {
+  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer,
+             uint64_t t_ns) override {
+    double t = (t_ns * 1e-9) * 60.0f;
+
+    for (const auto &pix : pixInfo) {
+      Vec3f p = pix.position;
+      float theta = (atan2(p.x, p.z) / k2pi + 0.5f) * 36.0f;
+      int theta_i = int(theta) % 36;
+      int t_i = int(t) % 36;
+      float r = sqrt(p.x * p.x + p.z * p.z);
+      constexpr float epsilon = 2.0f / 255.0f;
+      Color color(epsilon, epsilon, epsilon);  // almost black
+      if (theta_i == t_i) {
+        color = WHITE;
+      }
+      set_color(buffer, pix.index, color);
+    }
+  }
+};
+
 }  // namespace
 
 int main(int argc, char *argv[]) {
@@ -226,14 +247,16 @@ int main(int argc, char *argv[]) {
 
   HueShader hueShader;
   NoiseShader iceShader(blueBlack, 20.0f, 0.5f);
+  NoiseShader halloweenShader(sparkle[0], 20.0f, 0.5f);
   NoiseShader redWhiteShader(cm[0], 25.0f, 0.15f);
-  NoiseShader halloweenShader(halloween, 5.0f, 0.7f);
+  // NoiseShader halloweenShader(halloween, 5.0f, 0.7f);
   EiffelShader eiffelShaderLucas(pixInfo.size(), sparkle[0]);
   EiffelShader eiffelShaderCass(pixInfo.size(), sparkle[1]);
   RandShader randomShader;
   RandShader random2Shader(0.25f, 8.0f);
   RotYShader rotYShader;
   Twist twistShader;
+  Calib calibShader;
 
   float progCycleTime = 180.0f;  // 3 minutes per program...
   std::vector<TreeShader *> progs = {
@@ -254,7 +277,8 @@ int main(int argc, char *argv[]) {
       {"random", &randomShader},
       {"random2", &random2Shader},
       {"rot_y", &rotYShader},
-      {"twist", &twistShader}};
+      {"twist", &twistShader},
+      {"calib", &calibShader}};
 
   TreeShader *startProg = randomProg();
   // Parse command line arguments
