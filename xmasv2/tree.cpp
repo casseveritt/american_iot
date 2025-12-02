@@ -5,7 +5,8 @@
 
 #define BRANCHES_PER_RING 8
 #define RINGS 8
-#define BRANCH_PITCH (-M_PI / 4.0)
+#define BRANCH_PITCH float(-M_PI / 4.0)
+#define BRANCH_THICKNESS 0.008  // 8 mm
 #define PIXEL_SPACING 0.016667
 
 // [0 .. branchLen/2 - 1] are the outside pixels starting at the trunk
@@ -55,27 +56,38 @@ std::vector<PixInfo> get_pix_info() {
 
       angle += (angle_adj_deg[i] * M_PI) / 180.0;
 
-      float branch_height =  // in meters
+      const float branch_height =  // in meters
           0.0254 * branchHeightAtTrunkInches[i];
+
+      r3::Posef branchPitch(
+          r3::Rotationf(r3::Vec3f(0.0f, 0.0f, 1.0f), BRANCH_PITCH),
+          r3::Vec3f(0, 0, 0));
+      r3::Posef branchTranslate(r3::Rotationf(),
+                                r3::Vec3f(0.0f, branch_height, 0.0f));
+      r3::Posef branchLongitude(
+          r3::Rotationf(r3::Vec3f(0.0f, 1.0f, 0.0f), angle),
+          r3::Vec3f(0, 0, 0));
+      r3::Posef toTreeFromBranch =
+          branchLongitude * branchTranslate * branchPitch;
 
       size_t branch_start = pi.size();
       // down the branch on the outside
       for (int k = 0; k < half_branch_length; k++) {
-        float x = k * PIXEL_SPACING * cos(BRANCH_PITCH) + 0.02;
-        float y = k * PIXEL_SPACING * sin(BRANCH_PITCH) + branch_height;
+        r3::Vec3f position(k * PIXEL_SPACING + 0.02, BRANCH_THICKNESS / 2,
+                           0.0f);
         PixInfo pix;
         pix.index = index + k;
-        pix.position = r3::Vec3f(cos(angle) * x, y, sin(angle) * x);
+        pix.position = toTreeFromBranch * position;
         pix.outside = true;
         pi.push_back(pix);
       }
       // back up the branch on the inside
       for (int k = half_branch_length - 1; k >= 0; k--) {
-        float x = k * PIXEL_SPACING * cos(BRANCH_PITCH) + 0.02;
-        float y = k * PIXEL_SPACING * sin(BRANCH_PITCH) + branch_height;
+        r3::Vec3f position(k * PIXEL_SPACING + 0.02, -BRANCH_THICKNESS / 2,
+                           0.0f);
         PixInfo pix;
         pix.index = index + half_branch_length + (half_branch_length - 1 - k);
-        pix.position = r3::Vec3f(cos(angle) * x, y, sin(angle) * x);
+        pix.position = toTreeFromBranch * position;
         pix.outside = false;
         pi.push_back(pix);
       }
