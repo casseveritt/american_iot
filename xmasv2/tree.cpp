@@ -66,7 +66,7 @@ std::vector<PixInfo> get_pix_info() {
                                 r3::Vec3f(0.0f, branch_height, 0.0f));
       constexpr float kpi = 3.14159f;
       r3::Posef branchLongitude(
-          r3::Rotationf(r3::Vec3f(0.0f, 1.0f, 0.0f), kpi - angle),
+          r3::Rotationf(r3::Vec3f(0.0f, 1.0f, 0.0f), -angle),
           r3::Vec3f(0, 0, 0));
       r3::Posef toTreeFromBranch =
           branchLongitude * branchTranslate * branchPitch;

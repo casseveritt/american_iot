@@ -116,7 +116,8 @@ struct NoiseShader : public TreeShader {
 
 struct EiffelShader : public TreeShader {
   struct SparkleState {
-    float sparkleStart = -5.0f;
+    float start = -5.0f;
+    float duration = 0.45f;
   };
 
   EiffelShader(int numPixels, const ColorMap &cmapIn) : cmap(cmapIn) {
@@ -125,6 +126,7 @@ struct EiffelShader : public TreeShader {
   const ColorMap &cmap;
   void init(std::span<PixInfo> pixInfo, uint64_t t_ns) override {
     double t = t_ns * 1e-9;
+    leds_brightness(90);
   }
   void shade(std::span<PixInfo> pixInfo, uint8_t *buffer,
              uint64_t t_ns) override {
@@ -133,16 +135,16 @@ struct EiffelShader : public TreeShader {
 
     for (auto p : pixInfo) {
       auto &state = sparkleStates[count++];
-      const float nominalSparkleDuration = 0.45f;  // in seconds
-      float dt = t - state.sparkleStart;
-      if (dt > nominalSparkleDuration) {
-        state.sparkleStart = t + (rand() % 8000) * 0.001f;  // 0-5 seconds
+      float dt = t - state.start;
+      if (dt > state.duration) {
+        state.start = t + (rand() % 8000) * 0.001f;
+        state.duration = 0.45f + (rand() % 2000) * 0.0001f;
       }
-      dt = t - state.sparkleStart;
+      dt = t - state.start;
       Color color = BLACK;
       if (dt >= 0.0f) {
-        float sparkleProgress = dt / nominalSparkleDuration;
-        color = cmap.lookupClamped(sparkleProgress);
+        float progress = dt / state.duration;
+        color = cmap.lookupClamped(progress);
       }
       set_color(buffer, p.index, color);
     }
@@ -335,6 +337,7 @@ int main(int argc, char *argv[]) {
 
     if (int(t_s / progCycleTime) != int(prev_t_s / progCycleTime)) {
       prog = randomProg();
+      leds_brightness(50);
       prog->init(pixInfo, t_ns);
     }
 
