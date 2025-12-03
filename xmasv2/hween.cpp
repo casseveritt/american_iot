@@ -236,6 +236,9 @@ int main(int argc, char *argv[]) {
   constexpr size_t sz = PIXELS_PER_STRIP * STRIPS * 3;
   uint8_t buffers[NUM_BUFFERS][sz] = {};
 
+  // Seed the random number generator with current time
+  srand(time(NULL));
+
   init_cmaps();
 
   auto pixInfo = get_pix_info();
@@ -339,6 +342,8 @@ int main(int argc, char *argv[]) {
   float ramp_time = 2.0f;
   float dead_time = 0.5f;
   float trans_time = ramp_time + dead_time;
+
+  leds_brightness(0);
 
   while (true) {
     uint64_t t_ns = get_time_nsec() - epoch;
