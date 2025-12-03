@@ -129,7 +129,6 @@ struct EiffelShader : public TreeShader {
   const ColorMap &cmap;
   void init(std::span<PixInfo> pixInfo, uint64_t t_ns) override {
     double t = t_ns * 1e-9;
-    leds_brightness(90);
   }
   void shade(std::span<PixInfo> pixInfo, uint8_t *buffer,
              uint64_t t_ns) override {
