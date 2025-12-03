@@ -334,6 +334,12 @@ int main(int argc, char *argv[]) {
   TreeShader *prog = startProg;
   prog->init(pixInfo, epoch);
 
+  uint8_t max_brightness = prog->get_max_brightness();
+  uint8_t curr_brightness = 0;
+  float ramp_time = 2.0f;
+  float dead_time = 0.5f;
+  float trans_time = ramp_time + dead_time;
+
   while (true) {
     uint64_t t_ns = get_time_nsec() - epoch;
     float t_s = t_ns * 1e-9;
@@ -342,8 +348,29 @@ int main(int argc, char *argv[]) {
 
     if (int(t_s / progCycleTime) != int(prev_t_s / progCycleTime)) {
       prog = randomProg();
-      leds_brightness(50);
       prog->init(pixInfo, t_ns);
+      max_brightness = prog->get_max_brightness();
+    }
+
+    float progTime = fmod(t_s, progCycleTime);
+    uint8_t ramp_brightness = curr_brightness;
+    if (progTime < trans_time) {
+      float progRamp =
+          (std::clamp(progTime, dead_time, trans_time) - dead_time) / ramp_time;
+      ramp_brightness = uint8_t(progRamp * max_brightness);
+    } else if (progTime > (progCycleTime - 1.0f)) {
+      float progRamp =
+          (std::clamp(progCycleTime - progTime, dead_time, trans_time) -
+           dead_time) /
+          ramp_time;
+      ramp_brightness = uint8_t(progRamp * max_brightness);
+    } else {
+      ramp_brightness = max_brightness;
+    }
+
+    if (ramp_brightness != curr_brightness) {
+      leds_brightness(ramp_brightness);
+      curr_brightness = ramp_brightness;
     }
 
     Work w = {prog, pixInfo, buffer, t_ns};
