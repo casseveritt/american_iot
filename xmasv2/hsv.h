@@ -12,20 +12,30 @@ inline r3::Vec3f rgb_from_hsv(const r3::Vec3f &hsv) {
   float p = v * (1 - s);
   float q = v * (1 - f * s);
   float t = v * (1 - (1 - f) * s);
-
+  r3::Vec3f rgb;
   switch (i % 6) {
-  case 0:
-    return r3::Vec3f(v, t, p);
-  case 1:
-    return r3::Vec3f(q, v, p);
-  case 2:
-    return r3::Vec3f(p, v, t);
-  case 3:
-    return r3::Vec3f(p, q, v);
-  case 4:
-    return r3::Vec3f(t, p, v);
-  case 5:
-    return r3::Vec3f(v, p, q);
+    case 0:
+      rgb = r3::Vec3f(v, t, p);
+      break;
+    case 1:
+      rgb = r3::Vec3f(q, v, p);
+      break;
+    case 2:
+      rgb = r3::Vec3f(p, v, t);
+      break;
+    case 3:
+      rgb = r3::Vec3f(p, q, v);
+      break;
+    case 4:
+      rgb = r3::Vec3f(t, p, v);
+      break;
+    case 5:
+      rgb = r3::Vec3f(v, p, q);
+      break;
+    default:
+      rgb = r3::Vec3f(0, 0, 0);
+      break;
   }
-  return r3::Vec3f(0, 0, 0); // should never reach here
+  float gamma = 2.2f;
+  return r3::Vec3f(pow(rgb.x, gamma), pow(rgb.y, gamma), pow(rgb.z, gamma));
 }
