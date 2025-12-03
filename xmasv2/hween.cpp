@@ -106,8 +106,11 @@ struct NoiseShader : public TreeShader {
     double t = t_ns * 1e-9;
     for (auto p : pixInfo) {
       Vec3f pp = p.position * scale;
-      float noise =
-          0.5f + 0.5f * ImprovedNoise::noise(pp.x, pp.y + t * speed, pp.z);
+      float noise_up = ImprovedNoise::noise(pp.x, pp.y + t * speed, pp.z);
+      float noise_dn = ImprovedNoise::noise(pp.x, pp.y - t * speed, pp.z);
+      float noise_c = (noise_up + noise_dn) * 0.5f;
+      float noise = noise_c * 0.7f + 0.5f;
+
       auto c = colorMap.lookupClamped(noise);
       set_color(buffer, p.index, c);
     }
@@ -249,6 +252,7 @@ int main(int argc, char *argv[]) {
 
   HueShader hueShader;
   NoiseShader iceShader(blueBlack, 20.0f, 0.5f);
+  NoiseShader rgbishShader(rgbish, 20.0f, 0.05f);
   NoiseShader halloweenShader(sparkle[0], 20.0f, 0.5f);
   NoiseShader redWhiteShader(cm[0], 25.0f, 0.15f);
   // NoiseShader halloweenShader(halloween, 5.0f, 0.7f);
@@ -264,7 +268,7 @@ int main(int argc, char *argv[]) {
   std::vector<TreeShader *> progs = {
       &iceShader,         &redWhiteShader,   &halloweenShader, &hueShader,
       &eiffelShaderLucas, &eiffelShaderCass, &rotYShader,      &randomShader,
-      &random2Shader,     &twistShader};
+      &random2Shader,     &twistShader,      &rgbishShader};
   auto randomProg = [&progs]() -> TreeShader * {
     return progs[rand() % progs.size()];
   };
@@ -280,6 +284,7 @@ int main(int argc, char *argv[]) {
       {"random2", &random2Shader},
       {"rot_y", &rotYShader},
       {"twist", &twistShader},
+      {"rgbish_noise", &rgbishShader},
       {"calib", &calibShader}};
 
   TreeShader *startProg = randomProg();

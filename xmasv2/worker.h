@@ -11,6 +11,7 @@ enum Status { Waiting, Processing, Done };
 struct TreeShader {
   virtual ~TreeShader() = default;
   virtual void init(std::span<PixInfo> pixInfo, uint64_t t_ns) {}
+  virtual int get_max_brightness() { return 50; }
   virtual void shade(std::span<PixInfo> pixInfo, uint8_t *buffer,
                      uint64_t t_ns) = 0;
 };

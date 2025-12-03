@@ -6,6 +6,7 @@ ColorMap rgbcmy;
 ColorMap maroonWhite;
 ColorMap sparkle[2];
 ColorMap cm[2];
+ColorMap rgbish;
 
 void init_cmaps() {
   blueBlack.addColor(BLUE * 0.25f);
@@ -124,4 +125,30 @@ void init_cmaps() {
   cm[1].addColor(WHITE * 0.25f);
   cm[1].addColor(CYAN * 0.125f);
   cm[1].addColor(BLACK);
+
+  rgbish.addColor(BLUE * 0.025f);
+  rgbish.addColor(BLUE * 0.025f);
+  rgbish.addColor(BLUE * 0.025f);
+  rgbish.addColor(BLUE * 1.0f);
+  rgbish.addColor(BLUE * 0.025f);
+  rgbish.addColor(BLUE * 0.025f);
+  rgbish.addColor(BLACK);
+  rgbish.addColor(RED * 0.025f);
+  rgbish.addColor(RED * 0.025f);
+  rgbish.addColor(RED * 1.0f);
+  rgbish.addColor(RED * 0.025f);
+  rgbish.addColor(RED * 0.025f);
+  rgbish.addColor(BLACK);
+  rgbish.addColor(GREEN * 0.25f);
+  rgbish.addColor(GREEN * 0.25f);
+  rgbish.addColor(GREEN * 1.0f);
+  rgbish.addColor(GREEN * 0.025f);
+  rgbish.addColor(GREEN * 0.025f);
+  rgbish.addColor(BLACK);
+  rgbish.addColor(BLUE * 0.025f);
+  rgbish.addColor(BLUE * 0.025f);
+  rgbish.addColor(BLUE * 1.0f);
+  rgbish.addColor(BLUE * 0.025f);
+  rgbish.addColor(BLUE * 0.025f);
+  rgbish.addColor(BLUE * 0.025f);
 }
