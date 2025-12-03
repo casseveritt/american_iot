@@ -271,8 +271,12 @@ int main(int argc, char *argv[]) {
       &iceShader,         &redWhiteShader,   &halloweenShader, &hueShader,
       &eiffelShaderLucas, &eiffelShaderCass, &rotYShader,      &randomShader,
       &random2Shader,     &twistShader,      &rgbishShader};
-  auto randomProg = [&progs]() -> TreeShader * {
-    return progs[rand() % progs.size()];
+  auto randomProg = [&progs](TreeShader *currProg = nullptr) -> TreeShader * {
+    TreeShader *prog = currProg;
+    while (prog == currProg) {
+      prog = progs[rand() % progs.size()];
+    }
+    return prog;
   };
 
   std::unordered_map<std::string, TreeShader *> progMap = {
@@ -351,7 +355,7 @@ int main(int argc, char *argv[]) {
     uint8_t *buffer = buffers[count % NUM_BUFFERS];
 
     if (int(t_s / progCycleTime) != int(prev_t_s / progCycleTime)) {
-      prog = randomProg();
+      prog = randomProg(prog);
       prog->init(pixInfo, t_ns);
       max_brightness = prog->get_max_brightness();
     }
