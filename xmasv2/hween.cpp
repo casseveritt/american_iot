@@ -208,6 +208,131 @@ struct Twist : public TreeShader {
   }
 };
 
+struct SphereShader : public TreeShader {
+  struct Sphere {
+    Vec3f position;
+    Vec3f velocity;
+    float radius;
+    Color color;
+  };
+
+  std::vector<Sphere> spheres;
+  const int numSpheres = 25;
+  double lastTime = 0.0;
+
+  void init(std::span<PixInfo> pixInfo, uint64_t t_ns) override {
+    double t = t_ns * 1e-9;
+    lastTime = t;
+    spheres.clear();
+
+    for (int i = 0; i < numSpheres; i++) {
+      Sphere sphere;
+      // Random starting position within cylinder bounds (radius 1.5m, height
+      // 0-2.5m)
+      float r = rand() / float(RAND_MAX) * 1.5f;
+      float theta = rand() / float(RAND_MAX) * k2pi;
+      sphere.position = Vec3f(r * cos(theta),  // x within cylinder
+                              rand() / float(RAND_MAX) * 2.5f,  // y: 0 to 2.5
+                              r * sin(theta)  // z within cylinder
+      );
+
+      // Random velocity direction with varying speeds (0.1 to 0.5 m/s)
+      float speed = 0.1f + (rand() / float(RAND_MAX)) * 0.4f;
+      float vtheta = (rand() / float(RAND_MAX)) * k2pi;
+      float vphi = (rand() / float(RAND_MAX)) * M_PI - M_PI / 2.0f;
+      sphere.velocity =
+          Vec3f(cos(vphi) * cos(vtheta) * speed, sin(vphi) * speed,
+                cos(vphi) * sin(vtheta) * speed);
+
+      // Random radius (0.1 to 0.3 meters)
+      sphere.radius = 0.05f + (rand() / float(RAND_MAX)) * 0.1f;
+
+      // Random bright color
+      auto rc = []() -> float { return pow(rand() / float(RAND_MAX), 2.2f); };
+      sphere.color = Color(rc(), rc(), rc());
+
+      spheres.push_back(sphere);
+    }
+  }
+
+  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer,
+             uint64_t t_ns) override {
+    double t = t_ns * 1e-9;
+    double dt = t - lastTime;
+    lastTime = t;
+
+    // Update sphere positions
+    for (auto &sphere : spheres) {
+      sphere.position = sphere.position + sphere.velocity * dt;
+
+      // Cylindrical boundary reflection (radius 1.5m, y: 0 to 2.5m)
+      float radialDist = sqrt(sphere.position.x * sphere.position.x +
+                              sphere.position.z * sphere.position.z);
+
+      if (radialDist > 1.5f) {
+        // Hit cylinder wall - reflect velocity
+        Vec3f radialDir(sphere.position.x, 0.0f, sphere.position.z);
+        float len = radialDir.Length();
+        if (len > 0.0f) {
+          radialDir = radialDir / len;  // Normalize
+          // Reflect velocity around the normal (radial direction)
+          Vec3f radialVel = radialDir * (sphere.velocity.Dot(radialDir));
+          Vec3f tangentialVel = sphere.velocity - radialVel;
+          sphere.velocity = tangentialVel - radialVel;
+
+          // Push position back inside cylinder
+          float scale = 1.5f / radialDist;
+          sphere.position.x *= scale;
+          sphere.position.z *= scale;
+        }
+      }
+
+      // Y-axis boundaries (top and bottom of cylinder)
+      if (sphere.position.y < 0.0f) {
+        sphere.velocity.y = -sphere.velocity.y;
+        sphere.position.y = 0.0f;
+      } else if (sphere.position.y > 2.5f) {
+        sphere.velocity.y = -sphere.velocity.y;
+        sphere.position.y = 2.5f;
+      }
+    }
+
+    // Render pixels
+    for (const auto &pix : pixInfo) {
+      Color finalColor = BLACK;
+      float nearestDist = std::numeric_limits<float>::max();
+      const Sphere *nearestSphere = nullptr;
+
+      // Find the nearest sphere that intersects this pixel
+      for (const auto &sphere : spheres) {
+        float dist = (pix.position - sphere.position).Length();
+
+        if (dist < sphere.radius * 1.2f) {
+          if (dist < nearestDist) {
+            nearestDist = dist;
+            nearestSphere = &sphere;
+          }
+        }
+      }
+
+      // Color based on nearest sphere
+      if (nearestSphere != nullptr) {
+        if (nearestDist < nearestSphere->radius) {
+          // Inside sphere - use full color
+          finalColor = nearestSphere->color;
+        } else {
+          // Edge softening
+          float blend = 1.0f - (nearestDist - nearestSphere->radius) /
+                                   (nearestSphere->radius * 0.2f);
+          finalColor = nearestSphere->color * blend;
+        }
+      }
+
+      set_color(buffer, pix.index, finalColor);
+    }
+  }
+};
+
 struct Calib : public TreeShader {
   void shade(std::span<PixInfo> pixInfo, uint8_t *buffer,
              uint64_t t_ns) override {
@@ -264,13 +389,14 @@ int main(int argc, char *argv[]) {
   RandShader random2Shader(0.25f, 8.0f);
   RotYShader rotYShader;
   Twist twistShader;
+  SphereShader sphereShader;
   Calib calibShader;
 
   float progCycleTime = 180.0f;  // 3 minutes per program...
   std::vector<TreeShader *> progs = {
       &iceShader,         &redWhiteShader,   &halloweenShader, &hueShader,
       &eiffelShaderLucas, &eiffelShaderCass, &rotYShader,      &randomShader,
-      &random2Shader,     &twistShader,      &rgbishShader};
+      &random2Shader,     &twistShader,      &rgbishShader,    &sphereShader};
   auto randomProg = [&progs](TreeShader *currProg = nullptr) -> TreeShader * {
     TreeShader *prog = currProg;
     while (prog == currProg) {
@@ -291,6 +417,7 @@ int main(int argc, char *argv[]) {
       {"rot_y", &rotYShader},
       {"twist", &twistShader},
       {"rgbish_noise", &rgbishShader},
+      {"sphere", &sphereShader},
       {"calib", &calibShader}};
 
   TreeShader *startProg = randomProg();
