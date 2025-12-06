@@ -33,6 +33,8 @@ using namespace r3;
 
 namespace {
 
+inline float rnd() { return rand() / float(RAND_MAX); }
+
 struct HueShader : public TreeShader {
   void shade(std::span<PixInfo> pixInfo, uint8_t *buffer,
              uint64_t t_ns) override {
@@ -73,11 +75,10 @@ struct RandShader : public TreeShader {
              uint64_t t_ns) override {
     double t = t_ns * 1e-9;  // Convert to seconds
     int idx = 0;
-    float onRand = rand() / float(RAND_MAX);
+    float onRand = rnd();
     Color randomColor = BLACK;
     if (onRand <= fracOn) {
-      randomColor = Color(rand() / float(RAND_MAX), rand() / float(RAND_MAX),
-                          rand() / float(RAND_MAX));
+      randomColor = Color(rnd(), rnd(), rnd());
       randomColor.x = pow(randomColor.x, power);
       randomColor.y = pow(randomColor.y, power);
       randomColor.z = pow(randomColor.z, power);
@@ -229,26 +230,26 @@ struct SphereShader : public TreeShader {
       Sphere sphere;
       // Random starting position within cylinder bounds (radius 1.5m, height
       // 0-2.5m)
-      float r = rand() / float(RAND_MAX) * 1.5f;
-      float theta = rand() / float(RAND_MAX) * k2pi;
+      float r = rnd() * 1.5f;
+      float theta = rnd() * k2pi;
       sphere.position = Vec3f(r * cos(theta),  // x within cylinder
-                              rand() / float(RAND_MAX) * 2.5f,  // y: 0 to 2.5
-                              r * sin(theta)  // z within cylinder
+                              rnd() * 2.5f,    // y: 0 to 2.5
+                              r * sin(theta)   // z within cylinder
       );
 
       // Random velocity direction with varying speeds (0.1 to 0.5 m/s)
-      float speed = 0.1f + (rand() / float(RAND_MAX)) * 0.4f;
-      float vtheta = (rand() / float(RAND_MAX)) * k2pi;
-      float vphi = (rand() / float(RAND_MAX)) * M_PI - M_PI / 2.0f;
+      float speed = 0.1f + rnd() * 0.4f;
+      float vtheta = rnd() * k2pi;
+      float vphi = rnd() * M_PI - M_PI / 2.0f;
       sphere.velocity =
           Vec3f(cos(vphi) * cos(vtheta) * speed, sin(vphi) * speed,
                 cos(vphi) * sin(vtheta) * speed);
 
       // Random radius (0.1 to 0.3 meters)
-      sphere.radius = 0.05f + (rand() / float(RAND_MAX)) * 0.1f;
+      sphere.radius = 0.05f + rnd() * 0.1f;
 
       // Random bright color
-      auto rc = []() -> float { return pow(rand() / float(RAND_MAX), 2.2f); };
+      auto rc = []() -> float { return pow(rnd(), 2.2f); };
       sphere.color = Color(rc(), rc(), rc());
 
       spheres.push_back(sphere);
@@ -333,6 +334,175 @@ struct SphereShader : public TreeShader {
   }
 };
 
+struct ParticleShader : public TreeShader {
+  struct Particle {
+    Vec3f position;
+    Vec3f velocity;
+    Color color;
+  };
+
+  std::vector<Particle> particles;
+  const int numParticles = 80;
+  const float repulsionDist = 0.04f;       // 4 cm
+  const float attractionCutoff = 0.5f;     // 50 cm - max attraction distance
+  const float illuminationRadius = 0.15f;  // 15 cm
+  const float cylinderRadius = 1.5f;
+  const float cylinderHeight = 2.5f;
+  double lastTime = 0.0;
+
+  void init(std::span<PixInfo> pixInfo, uint64_t t_ns) override {
+    double t = t_ns * 1e-9;
+    lastTime = t;
+    particles.clear();
+
+    for (int i = 0; i < numParticles; i++) {
+      Particle particle;
+
+      // Random starting position uniformly distributed within cylinder
+      // Use sqrt(r) for uniform spatial distribution (not biased to center)
+      float r = rnd() * cylinderRadius;
+      float theta = rnd() * k2pi;
+      particle.position =
+          Vec3f(r * cos(theta), rnd() * cylinderHeight, r * sin(theta));
+
+      // Random initial velocity in all directions
+      particle.velocity = Vec3f((rnd() - 0.5f) * 0.2f, (rnd() - 0.5f) * 0.2f,
+                                (rnd() - 0.5f) * 0.2f);
+
+      // Random bright color
+      particle.color = Color(rnd(), rnd(), rnd());
+
+      particles.push_back(particle);
+    }
+  }
+
+  void shade(std::span<PixInfo> pixInfo, uint8_t *buffer,
+             uint64_t t_ns) override {
+    double t = t_ns * 1e-9;
+    double dt = t - lastTime;
+    lastTime = t;
+
+    // Limit dt to avoid instability
+    dt = std::min(dt, 0.1);
+
+    // Update particle physics
+    for (size_t i = 0; i < particles.size(); i++) {
+      auto &p1 = particles[i];
+      Vec3f force(0.0f, 0.0f, 0.0f);
+
+      // Calculate forces from other particles
+      for (size_t j = 0; j < particles.size(); j++) {
+        if (i == j) continue;
+
+        auto &p2 = particles[j];
+        Vec3f delta = p1.position - p2.position;
+        float dist = delta.Length();
+
+        if (dist < 0.001f) continue;  // Avoid division by zero
+
+        Vec3f direction = delta / dist;
+
+        float forceMag = 0.0f;
+
+        if (dist < repulsionDist) {
+          // Repulsive force: zero at repulsionDist, increases as distance
+          // approaches zero Using inverse relationship: stronger as distance
+          // decreases
+          float ratio = dist / repulsionDist;  // 0 to 1
+          forceMag =
+              0.5f * (1.0f / ratio -
+                      1.0f);  // Goes to infinity as ratio->0, zero at ratio=1
+          force = force + direction * forceMag;
+        } else {
+          // Attractive force: maximum at 2*repulsionDist, exponential falloff
+          // At 3*repulsionDist, should be 0.1 of maximum
+          // exp(-k*(3-2)) = 0.1, so k = -ln(0.1) = 2.3026
+          float maxAttractionDist = 2.0f * repulsionDist;
+          float attrStrength = 0.1f;  // Base attraction strength
+
+          if (dist > maxAttractionDist) {
+            // Exponential falloff after maximum
+            float exponent =
+                2.3026f * (dist - maxAttractionDist) / repulsionDist;
+            forceMag = attrStrength * exp(-exponent);
+          } else {
+            // Linear ramp from 0 at repulsionDist to max at 2*repulsionDist
+            float ratio = (dist - repulsionDist) / repulsionDist;  // 0 to 1
+            forceMag = attrStrength * ratio;
+          }
+          force = force - direction * forceMag;
+        }
+      }
+
+      // Update velocity and position (no damping for energy conservation)
+      p1.velocity = p1.velocity + force * dt;
+
+      // Limit max velocity to 0.10 m/s
+      float speed = p1.velocity.Length();
+      if (speed > 0.10f) {
+        p1.velocity = p1.velocity * (0.10f / speed);
+      }
+
+      p1.position = p1.position + p1.velocity * dt;
+
+      // Cylindrical boundary reflection (elastic)
+      float radialDist =
+          sqrt(p1.position.x * p1.position.x + p1.position.z * p1.position.z);
+
+      if (radialDist > cylinderRadius) {
+        Vec3f radialDir(p1.position.x, 0.0f, p1.position.z);
+        float len = radialDir.Length();
+        if (len > 0.0f) {
+          radialDir = radialDir / len;
+          Vec3f radialVel = radialDir * (p1.velocity.Dot(radialDir));
+          Vec3f tangentialVel = p1.velocity - radialVel;
+          p1.velocity = tangentialVel - radialVel;  // Elastic reflection
+
+          float scale = cylinderRadius / radialDist;
+          p1.position.x *= scale;
+          p1.position.z *= scale;
+        }
+      }
+
+      // Y-axis boundaries (elastic)
+      if (p1.position.y < 0.0f) {
+        p1.velocity.y = -p1.velocity.y;
+        p1.position.y = 0.0f;
+      } else if (p1.position.y > cylinderHeight) {
+        p1.velocity.y = -p1.velocity.y;
+        p1.position.y = cylinderHeight;
+      }
+    }
+
+    // Render pixels
+    for (const auto &pix : pixInfo) {
+      Color finalColor = BLACK;
+
+      // Accumulate light additively from all particles within range
+      float maxLightDist =
+          2.0f * repulsionDist;  // Light reaches to 2x repulsion radius
+
+      for (const auto &particle : particles) {
+        float dist = (pix.position - particle.position).Length();
+
+        if (dist < maxLightDist) {
+          // Intensity falls off linearly with distance
+          float intensity = std::max(0.0f, 1.0f - (dist / maxLightDist));
+          intensity = pow(intensity, 2.2f);  // Sharper falloff
+          finalColor = finalColor + particle.color * intensity;
+        }
+      }
+
+      // Clamp to prevent oversaturation
+      finalColor.x = std::min(finalColor.x, 1.0f);
+      finalColor.y = std::min(finalColor.y, 1.0f);
+      finalColor.z = std::min(finalColor.z, 1.0f);
+
+      set_color(buffer, pix.index, finalColor);
+    }
+  }
+};
+
 struct Calib : public TreeShader {
   void shade(std::span<PixInfo> pixInfo, uint8_t *buffer,
              uint64_t t_ns) override {
@@ -390,6 +560,7 @@ int main(int argc, char *argv[]) {
   RotYShader rotYShader;
   Twist twistShader;
   SphereShader sphereShader;
+  ParticleShader particleShader;
   Calib calibShader;
 
   float progCycleTime = 180.0f;  // 3 minutes per program...
@@ -418,6 +589,7 @@ int main(int argc, char *argv[]) {
       {"twist", &twistShader},
       {"rgbish_noise", &rgbishShader},
       {"sphere", &sphereShader},
+      {"particle", &particleShader},
       {"calib", &calibShader}};
 
   TreeShader *startProg = randomProg();
