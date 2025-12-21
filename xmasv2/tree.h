@@ -5,11 +5,11 @@
 
 #include "linear.h"
 
+// Must be 16 if smi_leds is compiled for 16.
+#define STRIPS 16
 #if defined(TREE_V3)
-#define STRIPS 4
 #define PIXELS_PER_STRIP 300
 #else
-#define STRIPS 16
 #define PIXELS_PER_STRIP 320
 #endif
 
