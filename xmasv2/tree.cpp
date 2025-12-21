@@ -3,6 +3,12 @@
 #include <cmath>
 #include <cstdint>
 
+#if !defined(TREE_V2) && !defined(TREE_V3)
+#define TREE_V2
+#endif
+
+#if defined (TREE_V2)
+
 #define BRANCHES_PER_RING 8
 #define RINGS 8
 #define BRANCH_PITCH float(-M_PI / 4.0)
@@ -97,3 +103,9 @@ std::vector<PixInfo> get_pix_info() {
 
   return pi;
 }
+
+#endif
+
+#if defined(TREE_V3)
+
+#endif
