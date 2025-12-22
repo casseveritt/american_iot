@@ -110,7 +110,7 @@ struct NoiseShader : public TreeShader {
       float noise_up = ImprovedNoise::noise(pp.x, pp.y + t * speed, pp.z);
       float noise_dn = ImprovedNoise::noise(pp.x, pp.y - t * speed, pp.z);
       float noise_c = (noise_up + noise_dn) * 0.5f;
-      float noise = noise_c * 0.7f + 0.5f;
+      float noise = noise_c * 0.5f + 0.5f;
 
       auto c = colorMap.lookupClamped(noise);
       set_color(buffer, p.index, c);
