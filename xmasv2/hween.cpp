@@ -112,7 +112,7 @@ struct NoiseShader : public TreeShader {
       float noise_up = ImprovedNoise::noise(pp + tvec * t * speed);
       float noise_dn = ImprovedNoise::noise(pp - tvec * t * speed);
       float noise_c = (noise_up + noise_dn) * 0.5f;
-      float noise = noise_c * 0.5f + 0.5f;
+      float noise = noise_c * 0.7f + 0.5f;
 
       auto c = colorMap.lookupClamped(noise);
       set_color(buffer, p.index, c);
@@ -550,9 +550,9 @@ int main(int argc, char *argv[]) {
   int64_t count = 0;
 
   HueShader hueShader;
-  NoiseShader iceShader(blueBlack, 20.0f, 0.5f);
+  NoiseShader iceShader(blueBlack, 20.0f, 0.15f);
   NoiseShader rgbishShader(rgbish, 20.0f, 0.05f);
-  NoiseShader halloweenShader(sparkle[0], 20.0f, 0.5f);
+  NoiseShader halloweenShader(sparkle[0], 20.0f, 0.07f);
   NoiseShader redWhiteShader(cm[0], 25.0f, 0.15f);
   // NoiseShader halloweenShader(halloween, 5.0f, 0.7f);
   EiffelShader eiffelShaderLucas(pixInfo.size(), sparkle[0]);
