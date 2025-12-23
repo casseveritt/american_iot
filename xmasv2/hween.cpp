@@ -105,10 +105,12 @@ struct NoiseShader : public TreeShader {
   void shade(std::span<PixInfo> pixInfo, uint8_t *buffer,
              uint64_t t_ns) override {
     double t = t_ns * 1e-9;
+    float one_over_rt3 = 1.0f / sqrt(3.0f);
+    Vec3f tvec(one_over_rt3, one_over_rt3, one_over_rt3);
     for (auto p : pixInfo) {
       Vec3f pp = p.position * scale;
-      float noise_up = ImprovedNoise::noise(pp.x, pp.y + t * speed, pp.z);
-      float noise_dn = ImprovedNoise::noise(pp.x, pp.y - t * speed, pp.z);
+      float noise_up = ImprovedNoise::noise(pp + tvec * t * speed);
+      float noise_dn = ImprovedNoise::noise(pp - tvec * t * speed);
       float noise_c = (noise_up + noise_dn) * 0.5f;
       float noise = noise_c * 0.5f + 0.5f;
 
