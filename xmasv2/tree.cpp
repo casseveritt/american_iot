@@ -175,9 +175,11 @@ std::vector<PixInfo> get_pix_info() {
         pi.push_back(pix);
       }
 
-      // Section 3: 6 pixels horizontal at the base
-      for (int i = 0; i < 6; i++) {
-        float angle_offset = ((float)i / 5.0f) * (M_PI / 3.0f);
+      // Section 3: 12 pixels horizontal at the base
+      // Connect from Section 2's end angle (base_angle + M_PI/6) to Section 4's start angle (base_angle + M_PI/2)
+      // Total angular span: M_PI/2 - M_PI/6 = M_PI/3 (60 degrees)
+      for (int i = 0; i < 12; i++) {
+        float angle_offset = ((float)i / 11.0f) * (M_PI / 3.0f);
         float angle = base_angle + M_PI / 6.0f + angle_offset;
 
         PixInfo pix;
@@ -189,21 +191,7 @@ std::vector<PixInfo> get_pix_info() {
         pi.push_back(pix);
       }
 
-      // Section 4: 6 more pixels horizontal at the base
-      for (int i = 0; i < 6; i++) {
-        float angle_offset = ((float)i / 5.0f) * (M_PI / 3.0f);
-        float angle = base_angle + M_PI / 2.0f - M_PI / 6.0f + angle_offset;
-
-        PixInfo pix;
-        pix.index = strip * PIXELS_PER_STRIP_V3 + pixel_idx++;
-        pix.position = r3::Vec3f(base_radius * cos(angle),
-                                 0.05f,  // Slightly above base
-                                 base_radius * sin(angle));
-        pix.outside = is_outside;
-        pi.push_back(pix);
-      }
-
-      // Section 5: 72 pixels up to the tip again
+      // Section 4: 72 pixels up to the tip again
       for (int i = 0; i < 72; i++) {
         float t = (float)i / 71.0f;  // 0 to 1
         float height = t * cone_height;
@@ -218,7 +206,7 @@ std::vector<PixInfo> get_pix_info() {
         pi.push_back(pix);
       }
 
-      // Section 6: 72 pixels down from the tip
+      // Section 5: 72 pixels down from the tip
       for (int i = 0; i < 72; i++) {
         float t = (float)(71 - i) / 71.0f;  // 1 to 0
         float height = t * cone_height;
@@ -233,7 +221,7 @@ std::vector<PixInfo> get_pix_info() {
         pi.push_back(pix);
       }
 
-      // Total: 72 + 72 + 6 + 6 + 72 + 72 = 300 pixels
+      // Total: 72 + 72 + 12 + 72 + 72 = 300 pixels
     }
   }
 
