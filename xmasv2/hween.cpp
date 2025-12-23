@@ -107,10 +107,13 @@ struct NoiseShader : public TreeShader {
     double t = t_ns * 1e-9;
     float one_over_rt3 = 1.0f / sqrt(3.0f);
     Vec3f tvec(one_over_rt3, one_over_rt3, one_over_rt3);
+    auto nn = [](const Vec3f& p) -> float {
+      return ImprovedNoise::noise(p.x, p.y, p.z);
+    };
     for (auto p : pixInfo) {
       Vec3f pp = p.position * scale;
-      float noise_up = ImprovedNoise::noise(pp + tvec * t * speed);
-      float noise_dn = ImprovedNoise::noise(pp - tvec * t * speed);
+      float noise_up = nn(pp + tvec * t * speed);
+      float noise_dn = nn(pp - tvec * t * speed);
       float noise_c = (noise_up + noise_dn) * 0.5f;
       float noise = noise_c * 0.7f + 0.5f;
 
