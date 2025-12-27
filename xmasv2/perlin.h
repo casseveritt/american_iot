@@ -43,5 +43,5 @@ class ImprovedNoise {
     return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
   }
 
-  static const uint8_t p[256];
+  static const uint8_t p[512];
 };

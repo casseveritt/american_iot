@@ -3,26 +3,28 @@
 
 #include <vector>
 
-// Simple PNG writer using libpng
-// Compile with: g++ -o noise_image noise_image.cpp -lpng
-
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "perlin.h"
 #include "stb_image_write.h"
 
 int main() {
   const int width = 512;
   const int height = 512;
-  const int channels = 3;  // RGB
+  const int channels = 1;  // Greyscale
 
   std::vector<uint8_t> image(width * height * channels);
 
-  // Fill with a simple gradient for now
+  // Fill with Perlin noise
+  float scale = 0.05f;  // Scale factor for the noise
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
+      // Sample Perlin noise at this position
+      float noise = ImprovedNoise::noise(x * scale, y * scale, 0.0f);
+      // Normalize from [-1, 1] to [0, 255]
+      uint8_t value = static_cast<uint8_t>((noise + 1.0f) * 127.5f);
+
       int idx = (y * width + x) * channels;
-      image[idx + 0] = (x * 255) / width;   // R
-      image[idx + 1] = (y * 255) / height;  // G
-      image[idx + 2] = 128;                 // B
+      image[idx] = value;
     }
   }
 
