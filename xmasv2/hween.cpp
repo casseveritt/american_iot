@@ -726,7 +726,7 @@ int main(int argc, char *argv[]) {
       printf("fps = %d\n", int(1000 / delta));
       start = end;
     }
-    usleep(3000);
+    usleep(6000);
     prev_t_s = t_s;
   }
 }
