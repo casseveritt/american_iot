@@ -73,19 +73,21 @@ struct RandShader : public TreeShader {
 
   void shade(std::span<PixInfo> pixInfo, uint8_t *buffer,
              uint64_t t_ns) override {
-    double t = t_ns * 1e-9;  // Convert to seconds
-    int idx = 0;
-    float onRand = rnd();
-    Color randomColor = BLACK;
-    if (onRand <= fracOn) {
-      randomColor = Color(rnd(), rnd(), rnd());
-      randomColor.x = pow(randomColor.x, power);
-      randomColor.y = pow(randomColor.y, power);
-      randomColor.z = pow(randomColor.z, power);
+    // double t = t_ns * 1e-9;  // Convert to seconds
+    for (int i = 0; i < 10; i++) {
+      float onRand = rnd();
+      Color randomColor = BLACK;
+      if (onRand <= fracOn) {
+        randomColor = Color(rnd(), rnd(), rnd());
+        randomColor.x = pow(randomColor.x, power);
+        randomColor.y = pow(randomColor.y, power);
+        randomColor.z = pow(randomColor.z, power);
+      }
+      int randomIndex = rand() % colors.size();
+      colors[randomIndex] = randomColor;
     }
-    int randomIndex = rand() % colors.size();
-    colors[randomIndex] = randomColor;
 
+    int idx = 0;
     for (auto p : pixInfo) {
       Color &c = colors[idx];
       set_color(buffer, p.index, c);
@@ -107,7 +109,7 @@ struct NoiseShader : public TreeShader {
     double t = t_ns * 1e-9;
     float one_over_rt3 = 1.0f / sqrt(3.0f);
     Vec3f tvec(one_over_rt3, one_over_rt3, one_over_rt3);
-    auto nn = [](const Vec3f& p) -> float {
+    auto nn = [](const Vec3f &p) -> float {
       return ImprovedNoise::noise(p.x, p.y, p.z);
     };
     for (auto p : pixInfo) {
