@@ -6,9 +6,9 @@
 class ImprovedNoise {
  public:
   static float noise(float x, float y, float z) {
-    uint8_t X = static_cast<uint8_t>(x),  // FIND UNIT CUBE THAT
-        Y = static_cast<uint8_t>(y),      // CONTAINS POINT.
-        Z = static_cast<uint8_t>(z);
+    int X = static_cast<int>(floor(x)) & 255;  // FIND UNIT CUBE THAT
+    int Y = static_cast<int>(floor(y)) & 255;  // CONTAINS POINT.
+    int Z = static_cast<int>(floor(z)) & 255;
     x -= floor(x);  // FIND RELATIVE X,Y,Z
     y -= floor(y);  // OF POINT IN CUBE.
     z -= floor(z);
@@ -17,8 +17,8 @@ class ImprovedNoise {
         v = fade(y),    // FOR EACH OF X,Y,Z.
         w = fade(z);
 
-    uint8_t A = p[X] + Y, AA = p[A] + Z, AB = p[A + 1] + Z, B = p[X + 1] + Y,
-            BA = p[B] + Z, BB = p[B + 1] + Z;
+    int A = p[X] + Y, AA = p[A] + Z, AB = p[A + 1] + Z, B = p[X + 1] + Y,
+        BA = p[B] + Z, BB = p[B + 1] + Z;
 
     return lerp(
         w,

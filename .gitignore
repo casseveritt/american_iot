@@ -11,6 +11,7 @@
 hween
 example
 smi_test
+noise_image
 
 # IDE and editor files
 .vscode/settings.json
