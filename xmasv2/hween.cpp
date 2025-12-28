@@ -556,7 +556,7 @@ int main(int argc, char *argv[]) {
 
   HueShader hueShader;
   NoiseShader iceShader(blueBlack, 20.0f, 0.15f);
-  NoiseShader rgbishShader(rgbish, 20.0f, 0.05f);
+  NoiseShader rgbishShader(rgbish, 20.0f, 0.25f);
   NoiseShader halloweenShader(sparkle[0], 20.0f, 0.07f);
   NoiseShader redWhiteShader(cm[0], 25.0f, 0.15f);
   // NoiseShader halloweenShader(halloween, 5.0f, 0.7f);
