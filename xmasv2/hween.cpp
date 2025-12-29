@@ -138,7 +138,7 @@ struct EiffelShader : public TreeShader {
   EiffelShader(int numPixels, const ColorMap &cmapIn) : cmap(cmapIn) {
     sparkleStates.resize(numPixels);
   }
-  const ColorMap &cmap;
+  const ColorMap cmap;
   void init(std::span<PixInfo> pixInfo, uint64_t t_ns) override {
     double t = t_ns * 1e-9;
   }
