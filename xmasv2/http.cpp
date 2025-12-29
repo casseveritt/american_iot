@@ -36,38 +36,47 @@ void HttpServer::stop() {
 }
 
 void HttpServer::serverLoop() {
+  std::cout << "[HTTP] Starting server loop...\n";
   int server_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (server_fd < 0) {
-    std::cerr << "Failed to create socket\n";
+    std::cerr << "[HTTP] Failed to create socket: " << strerror(errno) << "\n";
     return;
   }
+  std::cout << "[HTTP] Socket created (fd=" << server_fd << ")\n";
 
   // Allow socket reuse
   int opt = 1;
   if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-    std::cerr << "Failed to set socket options\n";
+    std::cerr << "[HTTP] Failed to set socket options: " << strerror(errno)
+              << "\n";
     close(server_fd);
     return;
   }
+  std::cout << "[HTTP] Socket options set\n";
 
   struct sockaddr_in address;
   address.sin_family = AF_INET;
   address.sin_addr.s_addr = INADDR_ANY;
   address.sin_port = htons(port_);
 
+  std::cout << "[HTTP] Attempting to bind to 0.0.0.0:" << port_ << "\n";
   if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
-    std::cerr << "Failed to bind to port " << port_ << "\n";
+    std::cerr << "[HTTP] Failed to bind to port " << port_ << ": "
+              << strerror(errno) << "\n";
     close(server_fd);
     return;
   }
+  std::cout << "[HTTP] Bind successful\n";
 
   if (listen(server_fd, 10) < 0) {
-    std::cerr << "Failed to listen on socket\n";
+    std::cerr << "[HTTP] Failed to listen on socket: " << strerror(errno)
+              << "\n";
     close(server_fd);
     return;
   }
 
-  std::cout << "HTTP server listening on port " << port_ << "\n";
+  std::cout << "[HTTP] HTTP server listening on port " << port_ << "\n";
+  std::cout << "[HTTP] Server ready to accept connections\n";
 
   while (running_) {
     struct sockaddr_in client_addr;
@@ -85,11 +94,18 @@ void HttpServer::serverLoop() {
       if (errno == EAGAIN || errno == EWOULDBLOCK) {
         continue;
       }
+      std::cerr << "[HTTP] Accept error: " << strerror(errno) << "\n";
       continue;
     }
 
+    char client_ip[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
+    std::cout << "[HTTP] Accepted connection from " << client_ip << ":"
+              << ntohs(client_addr.sin_port) << "\n";
+
     handleClient(client_fd);
     close(client_fd);
+    std::cout << "[HTTP] Connection closed\n";
   }
 
   close(server_fd);
@@ -99,7 +115,10 @@ void HttpServer::handleClient(int client_fd) {
   char buffer[4096];
   ssize_t bytes_read = read(client_fd, buffer, sizeof(buffer) - 1);
 
+  std::cout << "[HTTP] Read " << bytes_read << " bytes from client\n";
+
   if (bytes_read <= 0) {
+    std::cerr << "[HTTP] Read error or empty request\n";
     return;
   }
 
@@ -111,10 +130,16 @@ void HttpServer::handleClient(int client_fd) {
   std::string method, path, version;
   iss >> method >> path >> version;
 
+  std::cout << "[HTTP] Request: " << method << " " << path << " " << version
+            << "\n";
+
   // Handle POST request for shader change
   if (method == "POST" && path == "/change_shader") {
+    std::cout << "[HTTP] Processing shader change request\n";
     // Call hween to change to random shader
     hween_change_to_random_shader();
+    std::cout << "[HTTP] Shader changed to: " << hween_get_current_shader()
+              << "\n";
 
     // Redirect back to main page
     std::ostringstream response;
