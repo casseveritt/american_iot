@@ -682,6 +682,8 @@ int main(int argc, char *argv[]) {
       ramp_brightness = max_brightness;
     }
 
+    ramp_brightness >>= 4; 
+
     if (ramp_brightness != curr_brightness) {
       leds_brightness(ramp_brightness);
       curr_brightness = ramp_brightness;
@@ -710,7 +712,7 @@ int main(int argc, char *argv[]) {
     // show_strip_index(buffer);
 
     // Send the buffer to the SMI buffer
-    if ((count % 1) == 0) {
+    if ((count) != 0) {
       leds_set(buffer);
     } else {
       leds_clear();
