@@ -5,9 +5,11 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <cstring>
 #include <iostream>
 #include <sstream>
+#include <string>
 #include <thread>
 
 #include "hween.h"
@@ -152,6 +154,47 @@ void HttpServer::handleClient(int client_fd) {
     return;
   }
 
+  // Handle POST request for brightness change
+  if (method == "POST" && path == "/set_brightness") {
+    std::cout << "[HTTP] Processing brightness change request\n";
+
+    // Find the body after double newline
+    std::string body_str;
+    size_t body_pos = request.find("\r\n\r\n");
+    if (body_pos != std::string::npos) {
+      body_str = request.substr(body_pos + 4);
+    }
+
+    // Parse brightness value
+    size_t brightness_pos = body_str.find("brightness=");
+    if (brightness_pos != std::string::npos) {
+      std::string brightness_str = body_str.substr(brightness_pos + 11);
+      size_t end_pos = brightness_str.find("&");
+      if (end_pos != std::string::npos) {
+        brightness_str = brightness_str.substr(0, end_pos);
+      }
+
+      try {
+        int brightness = std::stoi(brightness_str);
+        brightness = std::clamp(brightness, 0, 100);
+        hween_set_brightness(brightness);
+        std::cout << "[HTTP] Brightness set to: " << brightness << "\n";
+      } catch (...) {
+        std::cerr << "[HTTP] Failed to parse brightness value\n";
+      }
+    }
+
+    // Redirect back to main page
+    std::ostringstream response;
+    response << "HTTP/1.1 303 See Other\r\n";
+    response << "Location: /\r\n";
+    response << "Connection: close\r\n";
+    response << "\r\n";
+    std::string response_str = response.str();
+    write(client_fd, response_str.c_str(), response_str.length());
+    return;
+  }
+
   // Generate HTML form
   std::ostringstream body;
   body << "<!DOCTYPE html>\n";
@@ -162,9 +205,20 @@ void HttpServer::handleClient(int client_fd) {
   body << "h1 { color: #333; }";
   body << ".current { background: #e8f5e9; padding: 20px; border-radius: 5px; "
           "margin: 30px 0; font-size: 24px; }";
+  body << ".control { background: #f5f5f5; padding: 20px; border-radius: 5px; "
+          "margin: 20px 0; }";
+  body << ".slider-container { margin: 20px 0; }";
+  body << ".slider { width: 80%; height: 15px; border-radius: 5px; "
+          "background: #d3d3d3; outline: none; }";
+  body << ".slider::-webkit-slider-thumb { -webkit-appearance: none; "
+          "appearance: none; width: 25px; height: 25px; border-radius: 50%; "
+          "background: #2196f3; cursor: pointer; }";
+  body << ".slider::-moz-range-thumb { width: 25px; height: 25px; "
+          "border-radius: 50%; background: #2196f3; cursor: pointer; "
+          "border: none; }";
   body << "button { padding: 20px 40px; font-size: 20px; cursor: pointer; "
           "border: 2px solid #1976d2; background: #2196f3; color: white; "
-          "border-radius: 5px; transition: all 0.3s; }";
+          "border-radius: 5px; transition: all 0.3s; margin: 10px; }";
   body << "button:hover { background: #1976d2; transform: scale(1.05); }";
   body << "</style></head><body>";
   body << "<h1>LED Shader Control</h1>";
@@ -173,6 +227,24 @@ void HttpServer::handleClient(int client_fd) {
   body << "<form method='POST' action='/change_shader'>";
   body << "<button type='submit'>Change to Random Shader</button>";
   body << "</form>";
+
+  body << "<div class='control'>";
+  body << "<h2>Brightness Control</h2>";
+  body << "<form method='POST' action='/set_brightness'>";
+  body << "<div class='slider-container'>";
+  body << "<label for='brightness'>Brightness: <span id='brightness-value'>"
+       << hween_get_brightness() << "</span>%</label><br>";
+  body << "<input type='range' id='brightness' name='brightness' "
+          "class='slider' min='0' max='100' value='"
+       << hween_get_brightness()
+       << "' "
+          "oninput='document.getElementById(\"brightness-value\").innerText="
+          "this.value'>";
+  body << "</div>";
+  body << "<button type='submit'>Set Brightness</button>";
+  body << "</form>";
+  body << "</div>";
+
   body << "</body></html>";
 
   std::string response_body = body.str();

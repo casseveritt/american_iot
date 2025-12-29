@@ -14,5 +14,11 @@ bool hween_change_shader(const std::string& shader_name);
 // Get the current shader name
 std::string hween_get_current_shader();
 
+// Set max brightness (0-100)
+void hween_set_brightness(int brightness);
+
+// Get current max brightness (0-100)
+int hween_get_brightness();
+
 // Run the main LED update loop (blocks)
 void hween_run();

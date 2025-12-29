@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <iostream>
 #include <mutex>
 #include <optional>
 #include <span>
@@ -548,6 +549,7 @@ struct ShaderState {
   int64_t epoch = 0;
   bool initialized = false;
   std::mutex state_mutex;
+  int max_brightness_percent = 50;  // Default to 50%
 
   // All shader instances (owned)
   HueShader hueShader;
@@ -692,6 +694,18 @@ std::string hween_get_current_shader() {
   return g_shader_state.current_shader_name;
 }
 
+void hween_set_brightness(int brightness) {
+  std::lock_guard<std::mutex> lock(g_shader_state.state_mutex);
+  g_shader_state.max_brightness_percent = std::clamp(brightness, 0, 100);
+  std::cout << "[HWEEN] Max brightness set to "
+            << g_shader_state.max_brightness_percent << "%\n";
+}
+
+int hween_get_brightness() {
+  std::lock_guard<std::mutex> lock(g_shader_state.state_mutex);
+  return g_shader_state.max_brightness_percent;
+}
+
 void hween_run() {
   if (!g_shader_state.initialized) {
     fprintf(stderr, "Error: hween_init() must be called before hween_run()\n");
@@ -749,7 +763,9 @@ void hween_run() {
       ramp_brightness = max_brightness;
     }
 
-    ramp_brightness >>= 4;
+    // Apply user brightness setting (0-100 scale to 0-255 scale)
+    int user_brightness = hween_get_brightness();
+    ramp_brightness = (ramp_brightness * user_brightness) / 100;
 
     if (ramp_brightness != curr_brightness) {
       leds_brightness(ramp_brightness);
