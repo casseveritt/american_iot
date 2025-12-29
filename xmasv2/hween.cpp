@@ -23,7 +23,7 @@
 #include "http.h"
 #include "linear.h"
 #include "perlin.h"
-#include "smi_leds.h"
+#include "smi_leds_stub.h"
 #include "tree.h"
 #include "worker.h"
 
@@ -138,7 +138,7 @@ struct EiffelShader : public TreeShader {
   EiffelShader(int numPixels, const ColorMap &cmapIn) : cmap(cmapIn) {
     sparkleStates.resize(numPixels);
   }
-  const ColorMap cmap;
+  ColorMap cmap;
   void init(std::span<PixInfo> pixInfo, uint64_t t_ns) override {
     double t = t_ns * 1e-9;
   }
