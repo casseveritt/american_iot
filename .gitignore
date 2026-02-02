@@ -36,3 +36,8 @@ Thumbs.db
 # Build directories
 build/
 .cache/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
