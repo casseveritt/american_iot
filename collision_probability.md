@@ -21,10 +21,10 @@ For 60-bit random numbers:
 
 | Collision Probability | Number of IDs Required | Approximate Value |
 |----------------------|------------------------|-------------------|
-| 0.1% (1 in 1,000) | ~50,659,773 | ~50.7 million |
-| 1% (1 in 100) | ~161,135,149 | ~161 million |
-| 10% (1 in 10) | ~516,397,778 | ~516 million |
-| 50% (1 in 2) | ~1,280,000,000 | ~1.28 billion |
+| 0.1% (1 in 1,000) | ~48,031,205 | ~48.0 million |
+| 1% (1 in 100) | ~152,231,720 | ~152.2 million |
+| 10% (1 in 10) | ~492,894,318 | ~492.9 million |
+| 50% (1 in 2) | ~1,264,234,385 | ~1.26 billion |
 
 ### Formula Derivation
 
@@ -82,8 +82,8 @@ This is known as the birthday paradox, as it's analogous to calculating the prob
 
 For 60-bit random numbers (N = 2^60):
 - Square root of N: √N ≈ 1,073,741,824 (approximately 1.07 billion)
-- 50% collision probability at: n ≈ 1.18 × √N ≈ 1.28 billion IDs
-- 1% collision probability at: n ≈ 0.15 × √N ≈ 161 million IDs
+- 50% collision probability at: n ≈ 1.18 × √N ≈ 1.26 billion IDs
+- 1% collision probability at: n ≈ 0.14 × √N ≈ 152 million IDs
 
 ## Calculation Script
 
