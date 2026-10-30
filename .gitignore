@@ -11,6 +11,8 @@
 hween
 example
 smi_test
+ledtest8
+ledtest16
 
 # IDE and editor files
 .vscode/settings.json
