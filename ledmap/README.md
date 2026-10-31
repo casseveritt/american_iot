@@ -23,3 +23,34 @@ are triangulated into 3D positions. Anything ambiguous is dropped.
 
 One strand of 50-100 LEDs, one viewpoint, full encode-record-decode loop;
 measure the decode rate and tune color set, symbol duration and code length.
+
+## Status (2026-10-31)
+
+Done:
+- `sequence/idseq` encodes and plays the ID sequence (mode A: 8 colors, and
+  mode B: 4 colors; Manchester mode C from the plan is not implemented).
+  Seeded random codes with a minimum Hamming distance, plus check symbols.
+  `--dump FILE` writes the code table for the decoder.
+- Runs on ho.local on all 16 strips. Options: `--fps` (default 60),
+  `--slow` (symbol time multiplier), `--scale` (color value multiplier),
+  `--test-colors`, `--print`.
+- Frames are only sent to the strips when their data changes. Re-sending the
+  same frame every tick showed intermittent corruption at the same LED index
+  on every strand (a shared DMA/SMI glitch); sending on change made it go away.
+
+Working capture setup: `sudo ./idseq16 -n 300 --slow 4 --scale 0.25`, phone at
+lowest ISO and 1/500 s shutter. Blobs have proper colors and all 8 are easy to
+tell apart. Higher `--scale` or slower shutters clip the LED cores to white.
+
+Things to know:
+- Stop `hween` before running; two programs driving the SMI output fight.
+- The code table is regenerated from `--seed`, `--mode`, `--payload`,
+  `--check` and `--min-dist`, so keep those the same between a capture and its
+  decode (or save the `--dump` file with the clip).
+
+Next:
+- `detect/`: sync from the preamble/marker, find and track blobs, classify
+  colors from a ring around the blob peak (the center clips), vote across
+  cycles, verify check symbols, look up the id.
+- A short test clip in `data/` to develop against.
+- `solve/`: calibration, triangulation, validation.
