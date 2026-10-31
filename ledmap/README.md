@@ -11,9 +11,9 @@ are triangulated into 3D positions. Anything ambiguous is dropped.
 
 ## Layout
 
-- `codegen/`   — seeded random code words with a minimum Hamming distance
-- `sequence/`  — controller program that plays preamble/payload/check/gap
-  (C++ on ho.local, built like `../ledtest`)
+- `sequence/`  — `idseq`: generates the seeded random codes (min Hamming
+  distance) and plays preamble/marker/payload/check/gap (C++, built like
+  `../ledtest`)
 - `detect/`    — video decoder: blob detection, tracking, color classification,
   majority vote, ID lookup (Python + OpenCV)
 - `solve/`     — calibration, triangulation, bundle adjustment, validation
