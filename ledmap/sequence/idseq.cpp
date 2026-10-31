@@ -22,6 +22,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <random>
 #include <vector>
 
@@ -68,8 +69,17 @@ struct Config {
   int check = 2;      // check symbols
   int min_dist = 4;   // minimum Hamming distance between payloads
   unsigned seed = 1;
-  double symbol_s = 0.100;
+  double symbol_s = 0.100;  // nominal, before --slow
+  double fps = 60.0;        // output rate; symbols are a whole number of frames
+  double slow = 1.0;        // symbol time multiplier
+  double scale = 1.0;       // color value multiplier
+  int sym_frames = 6;       // derived: frames per symbol
 };
+
+Rgb scaled(Rgb c, double s) {
+  return {uint8_t(c.r * s + 0.5), uint8_t(c.g * s + 0.5),
+          uint8_t(c.b * s + 0.5)};
+}
 
 int alphabet_size(char mode) { return mode == 'A' ? 8 : 4; }
 
@@ -212,11 +222,11 @@ bool dump_codes(const char *path, const Config &c, const Cycle &cy) {
 
 // Writes one slot's colors into the driver's strip-major buffer.
 void render_slot(Cycle &cy, int slot, int active_strips, int driver_strips,
-                 int leds, std::vector<uint8_t> &buf) {
+                 int leds, double scale, std::vector<uint8_t> &buf) {
   std::fill(buf.begin(), buf.end(), 0);
   for (int s = 0; s < active_strips && s < driver_strips; s++) {
     for (int led = 0; led < leds; led++) {
-      Rgb col = cy.at(slot, s * leds + led);
+      Rgb col = scaled(cy.at(slot, s * leds + led), scale);
       uint8_t *p = &buf[(size_t(s) * leds + led) * 3];
       p[0] = col.r;
       p[1] = col.g;
@@ -237,6 +247,7 @@ void test_colors(const Config &c, int driver_strips, double secs_each) {
   for (int sym = 0; sym < alphabet && !quit; sym++) {
     Rgb col = symbol_color(c.mode, sym);
     printf("color %c (%d,%d,%d)\n", slot_char(c, col), col.r, col.g, col.b);
+    col = scaled(col, c.scale);
     for (size_t i = 0; i < buf.size(); i += 3) {
       buf[i] = col.r;
       buf[i + 1] = col.g;
@@ -263,6 +274,10 @@ void usage(const char *prog) {
       "  -d, --min-dist N    min Hamming distance between codes (default 4)\n"
       "  -S, --seed N        code seed (default 1)\n"
       "  -t, --symbol-ms MS  symbol duration (default 100)\n"
+      "  -f, --fps HZ        output update rate (default 60); symbols last a\n"
+      "                      whole number of frames\n"
+      "  -x, --slow F        multiply symbol time by F, e.g. 10 (default 1)\n"
+      "  -c, --scale F       multiply color values by F, 0-1 (default 1)\n"
       "  -T, --test-colors   show each symbol color solid for 3 s, then exit\n"
       "  -P, --print [N]     print the cycle for the first N LEDs (default "
       "8) and exit\n"
@@ -291,6 +306,9 @@ int main(int argc, char *argv[]) {
       {"min-dist", required_argument, 0, 'd'},
       {"seed", required_argument, 0, 'S'},
       {"symbol-ms", required_argument, 0, 't'},
+      {"fps", required_argument, 0, 'f'},
+      {"slow", required_argument, 0, 'x'},
+      {"scale", required_argument, 0, 'c'},
       {"test-colors", no_argument, 0, 'T'},
       {"print", optional_argument, 0, 'P'},
       {"dump", required_argument, 0, 'D'},
@@ -298,7 +316,7 @@ int main(int argc, char *argv[]) {
       {0, 0, 0, 0}};
 
   int opt;
-  while ((opt = getopt_long(argc, argv, "s:n:b:m:p:k:d:S:t:TP::D:h",
+  while ((opt = getopt_long(argc, argv, "s:n:b:m:p:k:d:S:t:f:x:c:TP::D:h",
                             long_options, 0)) != -1) {
     switch (opt) {
       case 's': c.strips = atoi(optarg); break;
@@ -310,6 +328,9 @@ int main(int argc, char *argv[]) {
       case 'd': c.min_dist = atoi(optarg); break;
       case 'S': c.seed = atoi(optarg); break;
       case 't': c.symbol_s = atof(optarg) / 1e3; break;
+      case 'f': c.fps = atof(optarg); break;
+      case 'x': c.slow = atof(optarg); break;
+      case 'c': c.scale = atof(optarg); break;
       case 'T': do_test_colors = true; break;
       case 'P': print_n = optarg ? atoi(optarg) : 8; break;
       case 'D': dump_path = optarg; break;
@@ -324,15 +345,20 @@ int main(int argc, char *argv[]) {
   }
   if (c.payload == 0) c.payload = c.mode == 'A' ? 10 : 16;
   if (c.leds < 1 || c.leds > 450 || c.brightness < 0 || c.brightness > 100 ||
-      c.check < 1 || c.payload < c.check || c.symbol_s <= 0) {
+      c.check < 1 || c.payload < c.check || c.symbol_s <= 0 || c.fps <= 0 ||
+      c.slow <= 0 || c.scale < 0 || c.scale > 1) {
     fprintf(stderr, "bad option value (see --help)\n");
     return 1;
   }
+  // Symbols last a whole number of output frames; use the effective time from
+  // here on so --print, --dump and the player agree.
+  c.sym_frames = std::max(1, int(c.symbol_s * c.slow * c.fps + 0.5));
+  c.symbol_s = c.sym_frames / c.fps;
 
   signal(SIGINT, on_signal);
   signal(SIGTERM, on_signal);
 
-  const bool want_hw = !print_n && !dump_path;
+  const bool want_hw = !print_n;
   int driver_strips = 0;
   if (want_hw || do_test_colors) {
     if (!leds_init(c.leds, c.brightness)) {
@@ -379,16 +405,23 @@ int main(int argc, char *argv[]) {
   if (!want_hw) return 0;
 
   std::vector<uint8_t> buf(size_t(driver_strips) * c.leds * 3);
+  printf("%.0f Hz, %d frames/symbol (%.0f ms), scale %.2f\n", c.fps,
+         c.sym_frames, c.symbol_s * 1e3, c.scale);
   double start = now_s();
+  long last_frame = -1;
   long last_slot = -1;
   while (!quit) {
-    long slot_abs = long((now_s() - start) / c.symbol_s);
-    if (slot_abs != last_slot) {
-      int slot = slot_abs % cy.slots;
-      if (slot == 0) printf("cycle %ld\n", slot_abs / cy.slots);
-      render_slot(cy, slot, strips, driver_strips, c.leds, buf);
-      show(buf);
-      last_slot = slot_abs;
+    long frame = long((now_s() - start) * c.fps);
+    if (frame != last_frame) {
+      long slot_abs = frame / c.sym_frames;
+      if (slot_abs != last_slot) {
+        int slot = slot_abs % cy.slots;
+        if (slot == 0) printf("cycle %ld\n", slot_abs / cy.slots);
+        render_slot(cy, slot, strips, driver_strips, c.leds, c.scale, buf);
+        last_slot = slot_abs;
+      }
+      show(buf);  // re-send every frame, at most fps times a second
+      last_frame = frame;
     }
     usleep(1000);
   }
