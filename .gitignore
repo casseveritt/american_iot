@@ -37,3 +37,6 @@ Thumbs.db
 # Build directories
 build/
 .cache/
+idseq8
+idseq16
+idseq_host
