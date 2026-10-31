@@ -407,9 +407,10 @@ int main(int argc, char *argv[]) {
   std::vector<uint8_t> buf(size_t(driver_strips) * c.leds * 3);
   printf("%.0f Hz, %d frames/symbol (%.0f ms), scale %.2f\n", c.fps,
          c.sym_frames, c.symbol_s * 1e3, c.scale);
-  double start = now_s();
+  std::vector<uint8_t> sent;  // what the strips currently hold
   long last_frame = -1;
   long last_slot = -1;
+  double start = now_s();
   while (!quit) {
     long frame = long((now_s() - start) * c.fps);
     if (frame != last_frame) {
@@ -419,8 +420,12 @@ int main(int argc, char *argv[]) {
         if (slot == 0) printf("cycle %ld\n", slot_abs / cy.slots);
         render_slot(cy, slot, strips, driver_strips, c.leds, c.scale, buf);
         last_slot = slot_abs;
+        // WS2812s hold their value, so only send when something changed.
+        if (buf != sent) {
+          show(buf);
+          sent = buf;
+        }
       }
-      show(buf);  // re-send every frame, at most fps times a second
       last_frame = frame;
     }
     usleep(1000);
