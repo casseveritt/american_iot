@@ -546,6 +546,18 @@ int main(int argc, char *argv[]) {
   if (pixInfo.empty()) return 1;
   if (layoutPath) printf("Layout: %s (%zu pixels)\n", layoutPath, pixInfo.size());
 
+  // With a layout, pixels it does not list have no known position and must
+  // never light, whatever a shader does. They are cleared before every send.
+  std::vector<uint32_t> unmapped;
+  if (layoutPath) {
+    std::vector<bool> mapped(PIXELS_PER_STRIP * STRIPS, false);
+    for (const auto &pix : pixInfo) mapped[pix.index] = true;
+    for (uint32_t i = 0; i < mapped.size(); i++) {
+      if (!mapped[i]) unmapped.push_back(i);
+    }
+    printf("%zu unmapped pixels will stay dark\n", unmapped.size());
+  }
+
   // initialize the smi_leds module, starting with a 35% brightness
   leds_init(PIXELS_PER_STRIP, 50);
   printf("compiled for %d strips\n", leds_num_strips());
@@ -711,6 +723,8 @@ int main(int argc, char *argv[]) {
     } while (true);
 
     // show_strip_index(buffer);
+
+    for (uint32_t i : unmapped) memset(&buffer[3 * i], 0, 3);
 
     // Send the buffer to the SMI buffer
     if ((count % 1) == 0) {
