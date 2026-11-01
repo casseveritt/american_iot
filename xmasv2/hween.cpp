@@ -17,6 +17,7 @@
 #include "color.h"
 #include "get_time.h"
 #include "hsv.h"
+#include "layout.h"
 #include "linear.h"
 #include "perlin.h"
 #include "smi_leds.h"
@@ -535,7 +536,15 @@ int main(int argc, char *argv[]) {
 
   init_cmaps();
 
-  auto pixInfo = get_pix_info();
+  // --layout FILE replaces the built-in tree with measured LED positions. It
+  // is needed before the shaders are built, so look for it ahead of getopt.
+  const char *layoutPath = nullptr;
+  for (int i = 1; i + 1 < argc; i++) {
+    if (strcmp(argv[i], "--layout") == 0) layoutPath = argv[i + 1];
+  }
+  auto pixInfo = layoutPath ? load_layout(layoutPath) : get_pix_info();
+  if (pixInfo.empty()) return 1;
+  if (layoutPath) printf("Layout: %s (%zu pixels)\n", layoutPath, pixInfo.size());
 
   // initialize the smi_leds module, starting with a 35% brightness
   leds_init(PIXELS_PER_STRIP, 50);
@@ -598,6 +607,7 @@ int main(int argc, char *argv[]) {
   static struct option long_options[] = {{"listprogs", no_argument, 0, 0},
                                          {"prog", required_argument, 0, 0},
                                          {"cycletime", required_argument, 0, 0},
+                                         {"layout", required_argument, 0, 0},
                                          {0, 0, 0, 0}};
 
   int option_index = 0;

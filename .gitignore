@@ -40,3 +40,5 @@ build/
 idseq8
 idseq16
 idseq_host
+.venv/
+__pycache__/

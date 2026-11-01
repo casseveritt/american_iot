@@ -1,0 +1,4 @@
+# clips and frame caches are large; keep them out of git
+*
+!.gitignore
+!.gitkeep

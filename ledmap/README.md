@@ -16,8 +16,10 @@ are triangulated into 3D positions. Anything ambiguous is dropped.
   `../ledtest`)
 - `detect/`    — video decoder: blob detection, tracking, color classification,
   majority vote, ID lookup (Python + OpenCV)
-- `solve/`     — calibration, triangulation, bundle adjustment, validation
-- `data/`      — clips and results (not committed if large)
+- `solve/`     — `layout2d.py` (2D positions -> hween layout); later calibration,
+  triangulation, bundle adjustment, validation
+- `data/`      — clips, frame caches, code tables (not committed)
+- `results/`   — one directory per run: positions, hween layout, how it was made
 
 ## First milestone
 
@@ -48,9 +50,18 @@ Things to know:
   `--check` and `--min-dist`, so keep those the same between a capture and its
   decode (or save the `--dump` file with the clip).
 
+Decoding (first clip, `results/5053`): `detect/extract.py` caches a clip's
+frames, `detect/decode.py` registers them (the phone drifts), finds the LED
+blobs, reads each LED's color per slot from its core and a ring around it, and
+matches the 12 symbols to the code table, refitting the color classes from
+confident matches. 185 of 322 blobs decoded, and neighbouring ids land next to
+each other, which the decoder never used. The rest are limited by clipped cores,
+a too-blue white balance and having only one cycle (no voting).
+
+Using a result in hween: `solve/layout2d.py positions2d.csv -o layout.csv`, then
+`./hween --layout layout.csv`. Pixels not in the layout stay dark, so a dead data
+line just has no rows. A new run is a new `results/<name>/` and a new file.
+
 Next:
-- `detect/`: sync from the preamble/marker, find and track blobs, classify
-  colors from a ring around the blob peak (the center clips), vote across
-  cycles, verify check symbols, look up the id.
-- A short test clip in `data/` to develop against.
-- `solve/`: calibration, triangulation, validation.
+- A better clip (neutral white balance, lower exposure, no HDR, 3+ cycles, tripod).
+- Several views and `solve/`: calibration, triangulation (z is 0 for now).
