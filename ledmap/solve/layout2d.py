@@ -13,7 +13,7 @@ connected) are left out, and hween does not light pixels that are not in the
 layout.
 
 Output is meters, y up, with x centered on the mapped LEDs and y = 0 at the
-lowest one. z is 0: a single view has no depth. The `source` column says where
+lowest one. z is constant (0, or --z-frac times the x width): a single view has no depth. The `source` column says where
 each position came from (decoded, interp or extrap).
 """
 import argparse
@@ -54,6 +54,9 @@ def main():
                     help="distance between neighboring LEDs in meters (default 1/60 m)")
     ap.add_argument("--tol-px", type=float, default=8.0,
                     help="outlier distance from a strip's fitted curve (default 8 px)")
+    ap.add_argument("--z-frac", type=float, default=0.0,
+                    help="put the whole plane at z = this fraction of the x width, so it "
+                         "does not pass through the y axis (radial effects look odd there)")
     args = ap.parse_args()
 
     by = defaultdict(list)
@@ -101,14 +104,15 @@ def main():
     print("LED pitch %.1f px -> %.3f mm/px; %d pixels in %d strips" %
           (px_per_led, m_per_px * 1e3, len(pos), len({k[0] for k in pos})))
 
+    zbias = args.z_frac * (xs.max() - xs.min()) * m_per_px
     with open(args.out, "w") as f:
-        f.write("# hween layout: strip,led,x,y,z in meters (y up, z unknown = 0)\n")
+        f.write("# hween layout: strip,led,x,y,z in meters (y up, z = constant plane offset %.4f m)\n" % zbias)
         f.write("# from %s; %d LEDs/strip, pitch %.4f m = %.1f px\n" %
                 (args.positions, nled, args.pitch_m, px_per_led))
         f.write("strip,led,x,y,z,source\n")
         for (strip, led), (x, y, src) in sorted(pos.items()):
             f.write("%d,%d,%.4f,%.4f,%.4f,%s\n" %
-                    (strip, led, (x - cx0) * m_per_px, (ybot - y) * m_per_px, 0.0, src))
+                    (strip, led, (x - cx0) * m_per_px, (ybot - y) * m_per_px, zbias, src))
 
 
 if __name__ == "__main__":

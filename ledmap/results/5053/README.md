@@ -10,7 +10,7 @@ left out, so strip 6 has no LEDs).
 - Code table: `idseq_host -s 16 -n 300 -P 1 -D codes.csv`.
 - Decode: `extract.py clip.MOV cache`, then
   `decode.py cache codes.csv --t0 4.5` -> `positions2d.csv` (185 of 322 blobs).
-- Layout: `solve/layout2d.py positions2d.csv -o layout.csv` -> 304 pixels
+- Layout: `solve/layout2d.py positions2d.csv -o layout.csv --z-frac 0.25` (plane offset in z by a quarter of the x width) -> 304 pixels
   (decoded ones kept, gaps interpolated, ends extrapolated), z = 0.
 
 Use it: `./hween --layout ../ledmap/results/5053/layout.csv`
