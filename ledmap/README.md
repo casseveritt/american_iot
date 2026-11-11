@@ -15,9 +15,10 @@ are triangulated into 3D positions. Anything ambiguous is dropped.
   distance) and plays preamble/marker/payload/check/gap (C++, built like
   `../ledtest`)
 - `detect/`    — video decoder: blob detection, tracking, color classification,
-  majority vote, ID lookup (Python + OpenCV)
-- `solve/`     — `layout2d.py` (2D positions -> hween layout); later calibration,
-  triangulation, bundle adjustment, validation
+  majority vote, ID lookup (Python + OpenCV); `treebox.py`, `process_clips.sh` run extract+decode per clip
+- `solve/`     — `layout2d.py` (single view 2D -> hween layout), `sfm.py` (joint camera + 3D light
+  solve from several views), `fillsym.py` / `fillstruct.py` / `fill3d.py` (fill unidentified LEDs),
+  `unseen.py` (LEDs missing from a layout, for `idseq --only`)
 - `data/`      — clips, frame caches, code tables (not committed)
 - `results/`   — one directory per run: positions, hween layout, how it was made
 
@@ -65,3 +66,17 @@ line just has no rows. A new run is a new `results/<name>/` and a new file.
 Next:
 - A better clip (neutral white balance, lower exposure, no HDR, 3+ cycles, tripod).
 - Several views and `solve/`: calibration, triangulation (z is 0 for now).
+
+## Status (2026-11-11): the Starkville tree is mapped
+
+`results/starkville-sfm2/layout_sym.csv` maps all 12 strips (3600 LEDs); see its README. Workflow:
+1. `idseq16 -n 300 --slow 1 --scale 0.25` (all lights, or `--only FILE` with `strip,led` lines to light a subset);
+   record ~10 s clips (3+ cycles) from several angles, whole tree in frame, phone steady.
+2. In `data/`: `../detect/process_clips.sh DIR clip.mov ...` (crop box, frame caches, decode).
+3. `solve/sfm.py -o OUT out_cNNN:cache_cNNN ...` (no assumed view order; needs shared LEDs between views, so lit
+   subsets must overlap earlier views), then `solve/fillsym.py OUT/points3d_all.csv -o layout.csv`.
+4. `./hween --layout layout.csv` (`--unmapped-red PCT` shows unmapped pixels as dim red).
+
+Findings: the strands are folded in half (LED i and 299-i share a position, facing opposite ways); the tree is
+12 identical meridian strips 30 deg apart. Known problem: about two thirds of clips decode to nearly nothing
+(0-10 ids), cause not found; the ones that work give 300-850 ids each. Keep earlier layouts under `results/`.
