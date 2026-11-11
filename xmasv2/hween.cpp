@@ -542,6 +542,11 @@ int main(int argc, char *argv[]) {
   for (int i = 1; i + 1 < argc; i++) {
     if (strcmp(argv[i], "--layout") == 0) layoutPath = argv[i + 1];
   }
+  // --unmapped-red PCT shows unmapped pixels as dim red (to see where they are)
+  float unmappedRed = 0.0f;
+  for (int i = 1; i + 1 < argc; i++) {
+    if (strcmp(argv[i], "--unmapped-red") == 0) unmappedRed = atof(argv[i + 1]);
+  }
   auto pixInfo = layoutPath ? load_layout(layoutPath) : get_pix_info();
   if (pixInfo.empty()) return 1;
   if (layoutPath) printf("Layout: %s (%zu pixels)\n", layoutPath, pixInfo.size());
@@ -555,7 +560,10 @@ int main(int argc, char *argv[]) {
     for (uint32_t i = 0; i < mapped.size(); i++) {
       if (!mapped[i]) unmapped.push_back(i);
     }
-    printf("%zu unmapped pixels will stay dark\n", unmapped.size());
+    if (unmappedRed > 0)
+      printf("%zu unmapped pixels will show %.0f%% red\n", unmapped.size(), unmappedRed);
+    else
+      printf("%zu unmapped pixels will stay dark\n", unmapped.size());
   }
 
   // initialize the smi_leds module, starting with a 35% brightness
@@ -620,6 +628,7 @@ int main(int argc, char *argv[]) {
                                          {"prog", required_argument, 0, 0},
                                          {"cycletime", required_argument, 0, 0},
                                          {"layout", required_argument, 0, 0},
+                                         {"unmapped-red", required_argument, 0, 0},
                                          {0, 0, 0, 0}};
 
   int option_index = 0;
@@ -724,7 +733,10 @@ int main(int argc, char *argv[]) {
 
     // show_strip_index(buffer);
 
-    for (uint32_t i : unmapped) memset(&buffer[3 * i], 0, 3);
+    for (uint32_t i : unmapped) {
+      memset(&buffer[3 * i], 0, 3);
+      if (unmappedRed > 0) buffer[3 * i] = (uint8_t)(2.55f * unmappedRed);
+    }
 
     // Send the buffer to the SMI buffer
     if ((count % 1) == 0) {
