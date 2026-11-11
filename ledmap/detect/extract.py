@@ -38,23 +38,31 @@ def main():
     ap.add_argument("clip")
     ap.add_argument("out")
     ap.add_argument("--width", type=int, default=1080,
-                    help="output width after rotation (default 1080)")
+                    help="output width after rotation (default 1080; with --crop, the crop's own width)")
+    ap.add_argument("--crop", help="x,y,w,h in source pixels (after rotation): keep full resolution "
+                    "of just this region, e.g. around the tree")
     args = ap.parse_args()
 
     info = probe(args.clip)
     w, h = int(info["width"]), int(info["height"])
     if info.get("rotation", "0") in ("90", "-90", "270", "-270"):
         w, h = h, w
-    ow = args.width
-    oh = round(h * ow / w / 2) * 2
+    crop = [int(v) for v in args.crop.split(",")] if args.crop else None
+    if crop:
+        crop = [crop[0], crop[1], crop[2] // 2 * 2, crop[3] // 2 * 2]
+        ow, oh = crop[2], crop[3]
+    else:
+        ow = args.width
+        oh = round(h * ow / w / 2) * 2
 
     pts = frame_times(args.clip)
     hlg = info.get("color_transfer") == "arib-std-b67"
+    cropf = "crop=%d:%d:%d:%d," % (crop[2], crop[3], crop[0], crop[1]) if crop else ""
     if hlg:
-        vf = ("zscale=w=%d:h=%d:tin=arib-std-b67:pin=bt2020:min=bt2020nc:rin=tv:"
+        vf = (cropf + "zscale=w=%d:h=%d:tin=arib-std-b67:pin=bt2020:min=bt2020nc:rin=tv:"
               "t=bt709:p=bt709:m=bt709:r=pc,format=rgb24" % (ow, oh))
     else:
-        vf = "scale=%d:%d,format=rgb24" % (ow, oh)
+        vf = cropf + ("scale=%d:%d,format=rgb24" % (ow, oh))
 
     os.makedirs(args.out, exist_ok=True)
     frames = np.lib.format.open_memmap(
@@ -76,6 +84,9 @@ def main():
     p.wait()
     frames.flush()
     np.save(os.path.join(args.out, "pts.npy"), pts[:n])
+    with open(os.path.join(args.out, "crop.txt"), "w") as f:  # where this cache sits in the source frame
+        f.write("%d,%d\n" % ((crop[0], crop[1]) if crop else (0, 0)))
+        f.write("%g\n" % (1.0 if crop else w / ow))   # source pixels per cache pixel
     print("%s: %d frames, %dx%d, %.2f..%.2f s%s" %
           (args.clip, n, ow, oh, pts[0], pts[n - 1], " (HLG->SDR)" if hlg else ""))
     if n != len(pts):

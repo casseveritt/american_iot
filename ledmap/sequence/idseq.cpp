@@ -221,11 +221,14 @@ bool dump_codes(const char *path, const Config &c, const Cycle &cy) {
 }
 
 // Writes one slot's colors into the driver's strip-major buffer.
+// LEDs with enabled[id] == 0 stay dark (an empty `enabled` means all).
 void render_slot(Cycle &cy, int slot, int active_strips, int driver_strips,
-                 int leds, double scale, std::vector<uint8_t> &buf) {
+                 int leds, double scale, const std::vector<char> &enabled,
+                 std::vector<uint8_t> &buf) {
   std::fill(buf.begin(), buf.end(), 0);
   for (int s = 0; s < active_strips && s < driver_strips; s++) {
     for (int led = 0; led < leds; led++) {
+      if (!enabled.empty() && !enabled[size_t(s) * leds + led]) continue;
       Rgb col = scaled(cy.at(slot, s * leds + led), scale);
       uint8_t *p = &buf[(size_t(s) * leds + led) * 3];
       p[0] = col.r;
@@ -233,6 +236,35 @@ void render_slot(Cycle &cy, int slot, int active_strips, int driver_strips,
       p[2] = col.b;
     }
   }
+}
+
+// One LED per line: "strip,led" or a global id (strip * leds + led); # comments.
+bool read_only_list(const char *path, int strips, int leds,
+                    std::vector<char> &enabled, int &count) {
+  FILE *f = fopen(path, "r");
+  if (!f) return false;
+  enabled.assign(size_t(strips) * leds, 0);
+  count = 0;
+  char line[256];
+  while (fgets(line, sizeof line, f)) {
+    int a, b;
+    long id;
+    if (line[0] == '#' || line[0] == '\n') continue;
+    if (sscanf(line, "%d,%d", &a, &b) == 2) {
+      id = long(a) * leds + b;
+      if (a < 0 || a >= strips || b < 0 || b >= leds) id = -1;
+    } else if (sscanf(line, "%ld", &id) != 1) {
+      continue;
+    }
+    if (id < 0 || id >= long(enabled.size())) {
+      fprintf(stderr, "%s: ignoring out-of-range entry: %s", path, line);
+      continue;
+    }
+    if (!enabled[id]) count++;
+    enabled[id] = 1;
+  }
+  fclose(f);
+  return true;
 }
 
 void show(std::vector<uint8_t> &buf) {
@@ -282,6 +314,9 @@ void usage(const char *prog) {
       "  -P, --print [N]     print the cycle for the first N LEDs (default "
       "8) and exit\n"
       "  -D, --dump FILE     write the code table to FILE\n"
+      "  -o, --only FILE     light only the LEDs listed in FILE (lines of\n"
+      "                      \"strip,led\" or a global id); the others stay dark.\n"
+      "                      Ids and colors are the same as without it.\n"
       "  -h, --help\n",
       prog);
 }
@@ -295,6 +330,7 @@ int main(int argc, char *argv[]) {
   bool do_test_colors = false;
   int print_n = 0;
   const char *dump_path = nullptr;
+  const char *only_path = nullptr;
 
   static struct option long_options[] = {
       {"strips", required_argument, 0, 's'},
@@ -312,11 +348,12 @@ int main(int argc, char *argv[]) {
       {"test-colors", no_argument, 0, 'T'},
       {"print", optional_argument, 0, 'P'},
       {"dump", required_argument, 0, 'D'},
+      {"only", required_argument, 0, 'o'},
       {"help", no_argument, 0, 'h'},
       {0, 0, 0, 0}};
 
   int opt;
-  while ((opt = getopt_long(argc, argv, "s:n:b:m:p:k:d:S:t:f:x:c:TP::D:h",
+  while ((opt = getopt_long(argc, argv, "s:n:b:m:p:k:d:S:t:f:x:c:TP::D:o:h",
                             long_options, 0)) != -1) {
     switch (opt) {
       case 's': c.strips = atoi(optarg); break;
@@ -334,6 +371,7 @@ int main(int argc, char *argv[]) {
       case 'T': do_test_colors = true; break;
       case 'P': print_n = optarg ? atoi(optarg) : 8; break;
       case 'D': dump_path = optarg; break;
+      case 'o': only_path = optarg; break;
       case 'h': usage(argv[0]); return 0;
       default: usage(argv[0]); return 1;
     }
@@ -402,6 +440,15 @@ int main(int argc, char *argv[]) {
     }
     printf("wrote %s\n", dump_path);
   }
+  std::vector<char> enabled;
+  if (only_path) {
+    int count = 0;
+    if (!read_only_list(only_path, strips, c.leds, enabled, count)) {
+      perror(only_path);
+      return 1;
+    }
+    printf("only lighting %d of %d LEDs from %s\n", count, n, only_path);
+  }
   if (!want_hw) return 0;
 
   std::vector<uint8_t> buf(size_t(driver_strips) * c.leds * 3);
@@ -418,7 +465,8 @@ int main(int argc, char *argv[]) {
       if (slot_abs != last_slot) {
         int slot = slot_abs % cy.slots;
         if (slot == 0) printf("cycle %ld\n", slot_abs / cy.slots);
-        render_slot(cy, slot, strips, driver_strips, c.leds, c.scale, buf);
+        render_slot(cy, slot, strips, driver_strips, c.leds, c.scale, enabled,
+                    buf);
         last_slot = slot_abs;
         // WS2812s hold their value, so only send when something changed.
         if (buf != sent) {
